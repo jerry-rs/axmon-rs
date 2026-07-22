@@ -32,7 +32,7 @@ export function MemView() {
     () =>
       events.map((e) => ({
         time: new Date(e.timestamp * 1000).toLocaleTimeString(),
-        usage: e.memUsage,
+        usage: Math.round(e.memUsage * 10) /10,
       })),
     [events],
   )
@@ -176,15 +176,8 @@ export function MemView() {
                 content={
                   <ChartTooltipContent
                     indicator="line"
+                    className="min-w-48"
                     labelFormatter={(_, payload) => payload?.[0]?.payload?.time ?? ''}
-                    formatter={(value: unknown) => (
-                      <div className="flex w-full items-center justify-between gap-8">
-                        <span className="text-muted-foreground">Memory Usage</span>
-                        <span className="ml-auto font-mono font-bold tabular-nums">
-                          {(value as number).toFixed(1)}%
-                        </span>
-                      </div>
-                    )}
                   />
                 }
               />

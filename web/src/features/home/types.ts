@@ -9,8 +9,4 @@ export interface HomeStreamEvent {
   gpuMaxUtilUsage: number
   gpuMaxMemUsage: number
   gpuMaxTemperature: number
-  dockerImageTotalCount: number
-  dockerImageRunningCount: number
-  dockerContainerTotalCount: number
-  dockerContainerRunningCount: number
 }

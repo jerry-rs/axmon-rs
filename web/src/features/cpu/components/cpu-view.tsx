@@ -31,7 +31,7 @@ export function CpuView() {
     () =>
       events.map((e) => ({
         time: new Date(e.timestamp * 1000).toLocaleTimeString(),
-        usage: e.cpuUsage,
+        usage: Math.round(e.cpuUsage * 10) / 10,
       })),
     [events],
   )
@@ -168,6 +168,7 @@ export function CpuView() {
                 content={
                   <ChartTooltipContent
                     indicator="line"
+                    className="min-w-48"
                     labelFormatter={(_, payload) => payload?.[0]?.payload?.time ?? ''}
                   />
                 }

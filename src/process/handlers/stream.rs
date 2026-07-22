@@ -1,5 +1,5 @@
+use axum::response::Sse;
 use axum::response::sse::Event;
-use axum::response::{Sse};
 use serde::Serialize;
 use std::convert::Infallible;
 use tokio_stream::Stream;
@@ -35,7 +35,7 @@ pub(crate) async fn process_stream_handler() -> Sse<impl Stream<Item = Result<Ev
         sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
 
         let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(1));
-        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
 
         let mut tick_count: u8 = 0;

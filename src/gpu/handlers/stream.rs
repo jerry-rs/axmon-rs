@@ -24,9 +24,9 @@ pub(crate) struct GProcess {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct GpuCore {
     index: u32,
-    name:String,
-    brand:String,
-    architecture:String,
+    name: String,
+    brand: String,
+    architecture: String,
     bus_id: String,
     util: f32,
     m_util: f32,
@@ -56,7 +56,7 @@ pub(crate) async fn gpu_stream_handler()
         );
         let users = sysinfo::Users::new_with_refreshed_list();
         let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(1));
-        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         loop {
             let _ = interval.tick().await;
             sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);

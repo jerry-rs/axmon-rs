@@ -3,25 +3,22 @@ import { Link } from '@tanstack/react-router'
 import { Area, AreaChart, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
-import { Cpu, MemoryStick, HardDrive, Container, Layers, Image } from 'lucide-react'
+import { Cpu, MemoryStick, HardDrive, Layers } from 'lucide-react'
 import { useHomeStream } from './hooks/use-home-stream'
 
-function usageColor(usage: number): string {
-  if (usage >= 80) return 'text-red-500'
-  if (usage >= 50) return 'text-yellow-500'
-  return 'text-green-500'
+interface MetricColors {
+  text: string
+  bg: string
+  spark: string
 }
 
-function usageBgColor(usage: number): string {
-  if (usage >= 80) return 'bg-red-500'
-  if (usage >= 50) return 'bg-yellow-500'
-  return 'bg-green-500'
-}
-
-function tempColor(temp: number): string {
-  if (temp >= 85) return 'text-red-500'
-  if (temp >= 60) return 'text-yellow-500'
-  return 'text-green-500'
+function metricColors(value: number, yellowAt: number, redAt: number): MetricColors {
+  const suffix = value >= redAt ? 'red-500' : value >= yellowAt ? 'yellow-500' : 'green-500'
+  return {
+    text: `text-${suffix}`,
+    bg: `bg-${suffix}`,
+    spark: `var(--color-${suffix})`,
+  }
 }
 
 function Sparkline({ data, color }: { data: { value: number }[]; color: string }) {
@@ -72,28 +69,28 @@ export function HomePage() {
       {/* Row 1: CPU / MEM / DISK */}
       <div className="grid gap-4 sm:grid-cols-3">
         {/* CPU */}
-        <Link to="/cpu" className="group">
-          <Card className="transition-shadow group-hover:shadow-md">
+        <Link to="/cpu" className="group flex flex-col">
+          <Card className="flex-1 transition-shadow group-hover:shadow-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">CPU</CardTitle>
               <Cpu className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="flex flex-1 flex-col space-y-3 min-h-0">
               <div>
-                <div className={`text-2xl font-bold tabular-nums ${usageColor(latest.cpuUsage)}`}>
+                <div className={`text-2xl font-bold tabular-nums ${metricColors(latest.cpuUsage, 50, 80).text}`}>
                   {latest.cpuUsage.toFixed(1)}
                   <span className="text-sm font-normal text-muted-foreground">%</span>
                 </div>
                 <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${usageBgColor(latest.cpuUsage)}`}
+                    className={`h-full rounded-full transition-all duration-500 ${metricColors(latest.cpuUsage, 50, 80).bg}`}
                     style={{ width: `${Math.min(latest.cpuUsage, 100)}%` }}
                   />
                 </div>
               </div>
               {cpuHistory.length > 0 && (
-                <div className="h-10 w-full">
-                  <Sparkline data={cpuHistory} color="hsl(142 76% 36%)" />
+                <div className="flex-1 w-full min-h-0">
+                  <Sparkline data={cpuHistory} color={metricColors(latest.cpuUsage, 50, 80).spark} />
                 </div>
               )}
             </CardContent>
@@ -101,45 +98,46 @@ export function HomePage() {
         </Link>
 
         {/* MEM */}
-        <Link to="/mem" className="group">
-          <Card className="transition-shadow group-hover:shadow-md">
+        <Link to="/mem" className="group flex flex-col">
+          <Card className="flex-1 transition-shadow group-hover:shadow-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Memory</CardTitle>
               <MemoryStick className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="flex flex-1 flex-col space-y-3 min-h-0">
               <div>
-                <div className={`text-2xl font-bold tabular-nums ${usageColor(latest.memUsage)}`}>
+                <div className={`text-2xl font-bold tabular-nums ${metricColors(latest.memUsage, 60, 85).text}`}>
                   {latest.memUsage.toFixed(1)}
                   <span className="text-sm font-normal text-muted-foreground">%</span>
                 </div>
                 <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${usageBgColor(latest.memUsage)}`}
+                    className={`h-full rounded-full transition-all duration-500 ${metricColors(latest.memUsage, 60, 85).bg}`}
                     style={{ width: `${Math.min(latest.memUsage, 100)}%` }}
                   />
                 </div>
               </div>
               {memHistory.length > 0 && (
-                <div className="h-10 w-full">
-                  <Sparkline data={memHistory} color="hsl(142 76% 36%)" />
+                <div className="flex-1 w-full min-h-0">
+                  <Sparkline data={memHistory} color={metricColors(latest.memUsage, 60, 85).spark} />
                 </div>
               )}
             </CardContent>
           </Card>
         </Link>
 
+
+        <div className='flex flex-col gap-3'>
         {/* DISK */}
         <Link to="/disk" className="group">
           <Card className="transition-shadow group-hover:shadow-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Disk</CardTitle>
-
               <HardDrive className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div>
-                <div className={`text-2xl font-bold flex justify-between items-center tabular-nums ${usageColor(latest.diskMaxUsage)}`}>
+                <div className={`text-2xl font-bold flex justify-between items-center tabular-nums ${metricColors(latest.diskMaxUsage, 70, 90).text}`}>
                   <span>{latest.diskMaxUsage.toFixed(1)}
                     <span className="text-sm font-normal text-muted-foreground">%</span>
                   </span>
@@ -147,7 +145,7 @@ export function HomePage() {
                 </div>
                 <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${usageBgColor(latest.diskMaxUsage)}`}
+                    className={`h-full rounded-full transition-all duration-500 ${metricColors(latest.diskMaxUsage, 70, 90).bg}`}
                     style={{ width: `${Math.min(latest.diskMaxUsage, 100)}%` }}
                   />
                 </div>
@@ -155,6 +153,21 @@ export function HomePage() {
             </CardContent>
           </Card>
         </Link>
+
+        {/* process */}
+        <Link to="/process" className="group">
+          <Card className="transition-shadow group-hover:shadow-md">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Processes</CardTitle>
+              <Layers className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold tabular-nums">{latest.processCount.toLocaleString()}</div>
+              <div className="mt-1 text-xs text-muted-foreground">All processes</div>
+            </CardContent>
+          </Card>
+          </Link>
+        </div>
       </div>
 
       {/* Row 2: GPU */}
@@ -172,10 +185,10 @@ export function HomePage() {
                   <span className="text-muted-foreground whitespace-nowrap w-20">Max Util</span>
                   {gpuMaxUtilUsageHistory.length > 0 && (
                     <div className="h-10 w-full">
-                      <Sparkline data={gpuMaxUtilUsageHistory} color="hsl(142 76% 36%)" />
+                      <Sparkline data={gpuMaxUtilUsageHistory} color={metricColors(latest.gpuMaxUtilUsage, 50, 80).spark} />
                     </div>
                   )}
-                  <span className={`font-medium tabular-nums w-15 text-right ${usageColor(latest.gpuMaxUtilUsage)}`}>
+                  <span className={`font-medium tabular-nums w-15 text-right ${metricColors(latest.gpuMaxUtilUsage, 50, 80).text}`}>
                     {latest.gpuMaxUtilUsage.toFixed(1)}%
                   </span>
                 </div>
@@ -183,10 +196,10 @@ export function HomePage() {
                   <span className="text-muted-foreground whitespace-nowrap w-20">Max Mem</span>
                   {gpuMaxMemUsageHistory.length > 0 && (
                     <div className="h-10 w-full">
-                      <Sparkline data={gpuMaxMemUsageHistory} color="hsl(142 76% 36%)" />
+                      <Sparkline data={gpuMaxMemUsageHistory} color={metricColors(latest.gpuMaxMemUsage, 60, 85).spark} />
                     </div>
                   )}
-                  <span className={`font-medium tabular-nums w-15 text-right ${usageColor(latest.gpuMaxMemUsage)}`}>
+                  <span className={`font-medium tabular-nums w-15 text-right ${metricColors(latest.gpuMaxMemUsage, 60, 85).text}`}>
                     {latest.gpuMaxMemUsage.toFixed(1)}%
                   </span>
                 </div>
@@ -194,74 +207,16 @@ export function HomePage() {
                   <span className="text-muted-foreground whitespace-nowrap w-20">Max Temp</span>
                   {gpuMaxTempHistory.length > 0 && (
                     <div className="h-10 w-full">
-                      <Sparkline data={gpuMaxTempHistory} color="hsl(142 76% 36%)" />
+                      <Sparkline data={gpuMaxTempHistory} color={metricColors(latest.gpuMaxTemperature, 60, 85).spark} />
                     </div>
                   )}
-                  <span className={`font-medium tabular-nums w-15 text-right ${tempColor(latest.gpuMaxTemperature)}`}>
+                  <span className={`font-medium tabular-nums w-15 text-right ${metricColors(latest.gpuMaxTemperature, 60, 85).text}`}>
                     {latest.gpuMaxTemperature}°C
                   </span>
                 </div>
               </div>
             </CardContent>
           </Card>
-        </Link>
-      </div>
-
-      {/* Row 3: Counts */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Link to="/docker" className="group">
-          <Card className="transition-shadow group-hover:shadow-md">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Images</CardTitle>
-              <Image className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-bold tabular-nums">{latest.dockerImageTotalCount.toLocaleString()}</div>
-                  <div className="text-xs text-muted-foreground">All images</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-lg font-bold tabular-nums text-green-500">{latest.dockerImageRunningCount.toLocaleString()}</div>
-                  <div className="text-xs text-muted-foreground">running</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link to="/docker" className="group">
-          <Card className="transition-shadow group-hover:shadow-md">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Containers</CardTitle>
-              <Container className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-bold tabular-nums">{latest.dockerContainerTotalCount.toLocaleString()}</div>
-                  <div className="text-xs text-muted-foreground">All containers</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-lg font-bold tabular-nums text-green-500">{latest.dockerContainerRunningCount.toLocaleString()}</div>
-                  <div className="text-xs text-muted-foreground">running</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link to="/process" className="group">
-        <Card className="transition-shadow group-hover:shadow-md">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Processes</CardTitle>
-            <Layers className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold tabular-nums">{latest.processCount.toLocaleString()}</div>
-            <div className="mt-1 text-xs text-muted-foreground">All processes</div>
-          </CardContent>
-        </Card>
         </Link>
       </div>
     </div>

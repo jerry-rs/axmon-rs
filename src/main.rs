@@ -11,11 +11,11 @@ mod cpu;
 mod disk;
 mod docker;
 mod gpu;
+mod home;
 mod mem;
+mod process;
 mod routers;
 mod state;
-mod home;
-mod process;
 
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
@@ -31,13 +31,20 @@ async fn main() {
                 .with_filter(
                     tracing_subscriber::EnvFilter::try_from_default_env()
                         .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
-                )
+                ),
         )
-        .with(
-            console_subscriber::ConsoleLayer::builder()
-                .server_addr("0.0.0.0:5555".parse::<std::net::SocketAddr>().unwrap())
-                .spawn(),
-        )
+        .with({
+            #[cfg(feature = "tokio-console")]
+            {
+                console_subscriber::ConsoleLayer::builder()
+                    .server_addr("0.0.0.0:5555".parse::<std::net::SocketAddr>().unwrap())
+                    .spawn()
+            }
+            #[cfg(not(feature = "tokio-console"))]
+            {
+                tracing_subscriber::layer::Identity::new()
+            }
+        })
         .init();
 
     let app_config = AppConfig::default();
@@ -53,11 +60,16 @@ async fn main() {
         .await
         .expect("TcpListener Bind Error");
     info!(
-        "Listening on (http or https)://{}:{} and tokio console on :5555 ",
+        "Listening on (http or https)://{}:{}{}",
         local_ip_address::local_ip()
             .map(|ip| ip.to_string())
             .unwrap_or_else(|_| app_config.ipv4),
-        app_config.port
+        app_config.port,
+        if cfg!(feature = "tokio-console") {
+            " and tokio console on :5555"
+        } else {
+            ""
+        }
     );
     axum::serve(app_listener, app_routers)
         .await

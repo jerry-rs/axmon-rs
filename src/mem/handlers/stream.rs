@@ -23,7 +23,7 @@ pub(crate) async fn mem_stream_handler() -> Sse<impl Stream<Item = Result<Event,
         );
         sys.refresh_memory();
         let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(1));
-        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         loop{
             let _ = interval.tick().await;
             sys.refresh_memory();

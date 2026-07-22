@@ -1,8 +1,5 @@
-use crate::state::AppState;
-use axum::extract::State;
 use axum::response::sse::{Event, KeepAlive, Sse};
 use serde::Serialize;
-use std::collections::HashSet;
 use std::convert::Infallible;
 use std::time::Duration;
 use tokio_stream::Stream;
@@ -20,10 +17,6 @@ pub(crate) struct HomeStreamResponse {
     gpu_max_util_usage: f32,
     gpu_max_mem_usage: f32,
     gpu_max_temperature: u32,
-    docker_image_running_count: u32,
-    docker_image_total_count: u32,
-    docker_container_running_count: u32,
-    docker_container_total_count: u32,
 }
 
 async fn get_max_disk_entry(disks: &sysinfo::Disks) -> (String, f32) {
@@ -74,51 +67,49 @@ async fn get_max_gpu_entry(nvml: &Option<nvml_wrapper::Nvml>) -> (f32, f32, u32)
     }
 }
 
-async fn get_docker_entry(docker: Option<&bollard::Docker>) -> (u32, u32, u32, u32) {
-    if let Some(client) = docker {
-        let container_opts = bollard::query_parameters::ListContainersOptions {
-            all: true,
-            ..Default::default()
-        };
-        let containers = client
-            .list_containers(Some(container_opts))
-            .await
-            .unwrap_or_default();
+// async fn get_docker_entry(docker: Option<&bollard::Docker>) -> (u32, u32, u32, u32) {
+//     if let Some(client) = docker {
+//         let container_opts = bollard::query_parameters::ListContainersOptions {
+//             all: true,
+//             ..Default::default()
+//         };
+//         let containers = client
+//             .list_containers(Some(container_opts))
+//             .await
+//             .unwrap_or_default();
 
-        let container_total = containers.len() as u32;
-        let mut container_running = 0u32;
-        let mut running_image_ids = HashSet::new();
+//         let container_total = containers.len() as u32;
+//         let mut container_running = 0u32;
+//         let mut running_image_ids = HashSet::new();
 
-        for c in &containers {
-            if let Some(bollard::models::ContainerSummaryStateEnum::RUNNING) = &c.state {
-                container_running += 1;
-                if let Some(img_id) = &c.image_id {
-                    running_image_ids.insert(img_id);
-                }
-            }
-        }
-        let image_opts = bollard::query_parameters::ListImagesOptions {
-            all: true,
-            ..Default::default()
-        };
-        let images = client
-            .list_images(Some(image_opts))
-            .await
-            .unwrap_or_default();
-        (
-            images.len() as u32,
-            running_image_ids.len() as u32,
-            container_total,
-            container_running,
-        )
-    } else {
-        (0, 0, 0, 0)
-    }
-}
+//         for c in &containers {
+//             if let Some(bollard::models::ContainerSummaryStateEnum::RUNNING) = &c.state {
+//                 container_running += 1;
+//                 if let Some(img_id) = &c.image_id {
+//                     running_image_ids.insert(img_id);
+//                 }
+//             }
+//         }
+//         let image_opts = bollard::query_parameters::ListImagesOptions {
+//             all: true,
+//             ..Default::default()
+//         };
+//         let images = client
+//             .list_images(Some(image_opts))
+//             .await
+//             .unwrap_or_default();
+//         (
+//             images.len() as u32,
+//             running_image_ids.len() as u32,
+//             container_total,
+//             container_running,
+//         )
+//     } else {
+//         (0, 0, 0, 0)
+//     }
+// }
 
-pub(crate) async fn home_stream_handler(
-    State(state): State<AppState>,
-) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+pub(crate) async fn home_stream_handler() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let nvm_handle = nvml_wrapper::Nvml::init().ok();
     let stream = async_stream::stream! {
         let mut sys = sysinfo::System::new_with_specifics(
@@ -132,16 +123,16 @@ pub(crate) async fn home_stream_handler(
         let kernel_long_version = sysinfo::System::kernel_long_version();
 
         let mut interval = tokio::time::interval(Duration::from_secs(1));
-        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
         sys.refresh_cpu_all();
 
         let mut tick_count: u8 = 0;
 
-        let (mut cached_docker_stats,mut cached_disk_stats) = tokio::join!(
-            get_docker_entry(state.docker_client.as_ref()),
-            get_max_disk_entry(&disks)
-        );
+        // let (mut cached_docker_stats,mut cached_disk_stats) = tokio::join!(
+        //     get_docker_entry(state.docker_client.as_ref()),
+        //     get_max_disk_entry(&disks)
+        // );
 
         loop {
             let _ = interval.tick().await;
@@ -149,8 +140,10 @@ pub(crate) async fn home_stream_handler(
             sys.refresh_cpu_all();
             sys.refresh_memory();
 
-            if tick_count % 5 == 0 {
+            if tick_count % 120 == 0 {
                 disks.refresh(true);
+            }
+            if tick_count % 3 == 0{
                 sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
             }
 
@@ -163,24 +156,24 @@ pub(crate) async fn home_stream_handler(
             };
             let process_count = sys.processes().len();
 
-            // update docker
-            if tick_count >0 && tick_count % 60 == 0 {
-                (cached_docker_stats,cached_disk_stats) = tokio::join!(
-                    get_docker_entry(state.docker_client.as_ref()),
-                    get_max_disk_entry(&disks)
-                );
-            }
-            let (
-                docker_image_total_count,
-                docker_image_running_count,
-                docker_container_total_count,
-                docker_container_running_count,
-            ) = cached_docker_stats;
+            // update
+            // if tick_count >0 && tick_count % 120 == 0 {
+            //     (cached_docker_stats,cached_disk_stats) = tokio::join!(
+            //         get_docker_entry(state.docker_client.as_ref()),
+            //         get_max_disk_entry(&disks)
+            //     );
+            // }
+            // let (
+            //     docker_image_total_count,
+            //     docker_image_running_count,
+            //     docker_container_total_count,
+            //     docker_container_running_count,
+            // ) = cached_docker_stats;
 
             let (
                 disk_mount_point,
                 disk_max_usage,
-            ) = cached_disk_stats.clone();
+            ) = get_max_disk_entry(&disks).await;
 
             let (
                 gpu_max_util_usage,
@@ -200,11 +193,7 @@ pub(crate) async fn home_stream_handler(
                 process_count,
                 gpu_max_util_usage,
                 gpu_max_mem_usage,
-                gpu_max_temperature,
-                docker_image_total_count,
-                docker_image_running_count,
-                docker_container_total_count,
-                docker_container_running_count,
+                gpu_max_temperature
             };
 
             if let Ok(event) = Event::default().json_data(&home_stream_response) {

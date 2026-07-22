@@ -4,12 +4,10 @@ use serde::Serialize;
 use std::convert::Infallible;
 use tokio_stream::Stream;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct CpuCore {
     name: String,
-    vendor_id: String,
-    brand: String,
     usage: f32,
 }
 
@@ -24,41 +22,55 @@ pub(crate) struct CpuStreamResponse {
 }
 
 pub(crate) async fn cpu_stream_handler() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+    let mut sys = sysinfo::System::new_with_specifics(
+        sysinfo::RefreshKind::nothing()
+            .with_cpu(sysinfo::CpuRefreshKind::nothing().with_cpu_usage()),
+    );
+    sys.refresh_cpu_all();
+
+    // 静态信息采集
+    let static_metas: Vec<CpuCore> = sys
+        .cpus()
+        .iter()
+        .map(|c| CpuCore {
+            name: c.name().to_string(),
+            usage: 0.0,
+        })
+        .collect();
+
     let stream = async_stream::stream! {
-        let mut sys = sysinfo::System::new_with_specifics(
-            sysinfo::RefreshKind::nothing()
-                .with_cpu(sysinfo::CpuRefreshKind::everything()),
-        );
-        sys.refresh_cpu_all();
         let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(1));
-        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-        loop{
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        loop {
             let _ = interval.tick().await;
             sys.refresh_cpu_all();
             let cpu_usage = sys.global_cpu_usage();
             let load_average = sysinfo::System::load_average();
-            let cpus = sys.cpus()
-                        .iter()
-                        .map(|c|CpuCore{
-                                name: c.name().to_string(),
-                                vendor_id:c.vendor_id().to_string(),
-                                brand: c.brand().to_string(),
-                                usage: c.cpu_usage() , }
-                        )
-                        .collect::<Vec<_>>();
+
+
+            let cpus: Vec<CpuCore> = sys
+                .cpus()
+                .iter()
+                .zip(static_metas.iter())
+                .map(|(c, meta)| CpuCore {
+                    name: meta.name.clone(),
+                    usage: c.cpu_usage(),
+                })
+                .collect();
 
             let timestamp = std::time::SystemTime::now()
-                            .duration_since(std::time::UNIX_EPOCH)
-                            .ok()
-                            .map(|x| x.as_secs())
-                            .unwrap_or_else(||0);
-            let cpu_sse_response =  CpuStreamResponse{
+                .duration_since(std::time::UNIX_EPOCH)
+                .ok()
+                .map(|x| x.as_secs())
+                .unwrap_or(0);
+
+            let cpu_stream_response = CpuStreamResponse {
                 timestamp,
                 cpu_usage,
                 load_average,
-                cpus
+                cpus,
             };
-            if let Ok(event) = Event::default().json_data(&cpu_sse_response) {
+            if let Ok(event) = Event::default().json_data(&cpu_stream_response) {
                 yield Ok(event);
             }
         }
