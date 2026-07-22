@@ -1,0 +1,37 @@
+[package]
+name = "axmon-rs"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "axmon"
+path = "src/main.rs"
+
+[dependencies]
+async-stream = { version = "0.3.6" }
+axum = { version = "0.8.9", features = ["macros"] }
+bollard = { version = "0.21.0" }
+clap = { version = "4.6.3", features = ["derive", "env"] }
+console-subscriber = { version = "0.5.0" }
+local-ip-address = { version = "0.6.13" }
+mimalloc = { version = "0.1.52" }
+nvml-wrapper = { version = "0.12.1", features = ["serde"] }
+rust-embed = { version = "8.12.0", features = ["axum-ex", "mime-guess"] }
+serde = { version = "1.0.229", features = ["derive"] }
+sysinfo = { version = "0.39.6", features = ["serde", "linux-netdevs"] }
+tokio = { version = "1.53.1", features = ["full", "tracing"] }
+tokio-stream = { version = "0.1.18" }
+tracing = { version = "0.1.44" }
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+
+[build-dependencies]
+walkdir = {version = "2.5.0"}
+
+[profile.release]
+opt-level = 3      # 优化目标：最大执行速度
+lto = "fat"        # 启用最激进的链接时优化
+codegen-units = 1  # 减少代码生成单元数量，提高优化效果
+panic = "abort"    # 使用"abort"而非"unwind"处理恐慌
+
+
+
