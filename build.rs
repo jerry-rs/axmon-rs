@@ -2,11 +2,11 @@ const FRONTEND_RELATIVE_DIR: &'static str = "web";
 
 fn main() {
     let current_dir = std::env::current_dir().unwrap();
-    // let dist_dir = current_dir.join("dist");
-    // if dist_dir.exists() {
-    //     std::fs::remove_dir_all(&dist_dir).unwrap();
-    //     println!("cargo::warning=🚀 success to remove {}",dist_dir.display());
-    // }
+    let dist_dir = current_dir.join("dist");
+    if dist_dir.exists() {
+        std::fs::remove_dir_all(&dist_dir).unwrap();
+        println!("cargo::warning=🚀 success to remove {}", dist_dir.display());
+    }
     let frontend_dir = current_dir.join(FRONTEND_RELATIVE_DIR);
     if !frontend_dir.exists() {
         panic!("Frontend not found");
