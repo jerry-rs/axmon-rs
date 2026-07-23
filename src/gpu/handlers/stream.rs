@@ -70,7 +70,7 @@ pub(crate) async fn gpu_stream_handler()
                 let name = c_device.name().unwrap_or_else(|_| "Unknown".to_string());
                 let brand = c_device.brand().map(|b|format!("{b:?}")).unwrap_or_default();
                 let architecture = c_device.architecture().map(|arch|format!("{arch:?}")).unwrap_or_default();
-                let bus_id = c_device.pci_info().map(|pci|format!("{:?}",pci.bus_id)).unwrap_or_default();
+                let bus_id = c_device.pci_info().map(|pci|pci.bus_id).ok().unwrap_or_default();
                 let g_util = c_device.utilization_rates()
                         .map_or_else(|_| 0.0, |u| u.gpu as f32);
 

@@ -302,7 +302,7 @@ export function GpuView() {
             <div key={gpu.index} className="rounded-lg border bg-muted/30 p-4">
               <div className="mb-3 flex items-center justify-between">
                 <div>
-                  <div className="text-base font-medium">{gpu.name}</div>
+                  <div className="text-base font-medium">{ gpu.index} {gpu.name}</div>
                   <p className="text-xs text-muted-foreground">
                     {gpu.brand} · {gpu.architecture} · {gpu.busId}
                   </p>
@@ -365,10 +365,11 @@ export function GpuView() {
                               PID {proc.pid}
                             </Badge>
                           </div>
-                          <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-muted-foreground">
+                          <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-muted-foreground tabular-nums">
                             <span>GPU Mem: {formatBytes(proc.usedGpuMemory)} / {formatBytes(proc.totalGpuMemory)}</span>
                             <span>CPU: {proc.cpuUsage.toFixed(1)}%</span>
                             <span>RAM: {formatBytes(proc.cpuMem)}</span>
+                            <span>VRAM: {formatBytes(proc.cpuVmem)}</span>
                             <span>User: {proc.user}</span>
                           </div>
                         </div>
