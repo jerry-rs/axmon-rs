@@ -77,13 +77,13 @@ export function HomePage() {
             </CardHeader>
             <CardContent className="flex flex-1 flex-col space-y-3 min-h-0">
               <div>
-                <div className={`text-2xl font-bold tabular-nums ${metricColors(latest.cpuUsage, 50, 80).text}`}>
+                <div className={`text-2xl font-bold tabular-nums ${metricColors(latest.cpuUsage, 75, 90).text}`}>
                   {latest.cpuUsage.toFixed(1)}
                   <span className="text-sm font-normal text-muted-foreground">%</span>
                 </div>
                 <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${metricColors(latest.cpuUsage, 50, 80).bg}`}
+                    className={`h-full rounded-full transition-all duration-500 ${metricColors(latest.cpuUsage, 75, 90).bg}`}
                     style={{ width: `${Math.min(latest.cpuUsage, 100)}%` }}
                   />
                 </div>
@@ -106,13 +106,13 @@ export function HomePage() {
             </CardHeader>
             <CardContent className="flex flex-1 flex-col space-y-3 min-h-0">
               <div>
-                <div className={`text-2xl font-bold tabular-nums ${metricColors(latest.memUsage, 60, 85).text}`}>
+                <div className={`text-2xl font-bold tabular-nums ${metricColors(latest.memUsage, 75, 90).text}`}>
                   {latest.memUsage.toFixed(1)}
                   <span className="text-sm font-normal text-muted-foreground">%</span>
                 </div>
                 <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${metricColors(latest.memUsage, 60, 85).bg}`}
+                    className={`h-full rounded-full transition-all duration-500 ${metricColors(latest.memUsage, 75, 90).bg}`}
                     style={{ width: `${Math.min(latest.memUsage, 100)}%` }}
                   />
                 </div>
@@ -137,7 +137,7 @@ export function HomePage() {
             </CardHeader>
             <CardContent>
               <div>
-                <div className={`text-2xl font-bold flex justify-between items-center tabular-nums ${metricColors(latest.diskMaxUsage, 70, 90).text}`}>
+                <div className={`text-2xl font-bold flex justify-between items-center tabular-nums ${metricColors(latest.diskMaxUsage, 80, 90).text}`}>
                   <span>{latest.diskMaxUsage.toFixed(1)}
                     <span className="text-sm font-normal text-muted-foreground">%</span>
                   </span>
@@ -145,7 +145,7 @@ export function HomePage() {
                 </div>
                 <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${metricColors(latest.diskMaxUsage, 70, 90).bg}`}
+                    className={`h-full rounded-full transition-all duration-500 ${metricColors(latest.diskMaxUsage, 80, 90).bg}`}
                     style={{ width: `${Math.min(latest.diskMaxUsage, 100)}%` }}
                   />
                 </div>
@@ -185,10 +185,10 @@ export function HomePage() {
                   <span className="text-muted-foreground whitespace-nowrap w-20">Max Util</span>
                   {gpuMaxUtilUsageHistory.length > 0 && (
                     <div className="h-10 w-full">
-                      <Sparkline data={gpuMaxUtilUsageHistory} color={metricColors(latest.gpuMaxUtilUsage, 50, 80).spark} />
+                      <Sparkline data={gpuMaxUtilUsageHistory} color={metricColors(latest.gpuMaxUtilUsage, 80, 90).spark} />
                     </div>
                   )}
-                  <span className={`font-medium tabular-nums w-15 text-right ${metricColors(latest.gpuMaxUtilUsage, 50, 80).text}`}>
+                  <span className={`font-medium tabular-nums w-15 text-right ${metricColors(latest.gpuMaxUtilUsage, 80, 90).text}`}>
                     {latest.gpuMaxUtilUsage.toFixed(1)}%
                   </span>
                 </div>
@@ -196,10 +196,10 @@ export function HomePage() {
                   <span className="text-muted-foreground whitespace-nowrap w-20">Max Mem</span>
                   {gpuMaxMemUsageHistory.length > 0 && (
                     <div className="h-10 w-full">
-                      <Sparkline data={gpuMaxMemUsageHistory} color={metricColors(latest.gpuMaxMemUsage, 60, 85).spark} />
+                      <Sparkline data={gpuMaxMemUsageHistory} color={metricColors(latest.gpuMaxMemUsage, 80, 90).spark} />
                     </div>
                   )}
-                  <span className={`font-medium tabular-nums w-15 text-right ${metricColors(latest.gpuMaxMemUsage, 60, 85).text}`}>
+                  <span className={`font-medium tabular-nums w-15 text-right ${metricColors(latest.gpuMaxMemUsage, 80, 90).text}`}>
                     {latest.gpuMaxMemUsage.toFixed(1)}%
                   </span>
                 </div>
@@ -207,10 +207,10 @@ export function HomePage() {
                   <span className="text-muted-foreground whitespace-nowrap w-20">Max Temp</span>
                   {gpuMaxTempHistory.length > 0 && (
                     <div className="h-10 w-full">
-                      <Sparkline data={gpuMaxTempHistory} color={metricColors(latest.gpuMaxTemperature, 60, 85).spark} />
+                      <Sparkline data={gpuMaxTempHistory} color={metricColors(latest.gpuMaxTemperature, 75, 85).spark} />
                     </div>
                   )}
-                  <span className={`font-medium tabular-nums w-15 text-right ${metricColors(latest.gpuMaxTemperature, 60, 85).text}`}>
+                  <span className={`font-medium tabular-nums w-15 text-right ${metricColors(latest.gpuMaxTemperature, 75, 85).text}`}>
                     {latest.gpuMaxTemperature}°C
                   </span>
                 </div>

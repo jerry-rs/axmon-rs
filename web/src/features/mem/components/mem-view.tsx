@@ -20,8 +20,8 @@ const CHART_CONFIG = {
 } as const
 
 function usageColor(usage: number): { text: string; bg: string } {
-  if (usage >= 80) return { text: 'text-red-500', bg: 'bg-red-500' }
-  if (usage >= 50) return { text: 'text-yellow-500', bg: 'bg-yellow-500' }
+  if (usage >= 90) return { text: 'text-red-500', bg: 'bg-red-500' }
+  if (usage >= 75) return { text: 'text-yellow-500', bg: 'bg-yellow-500' }
   return { text: 'text-green-500', bg: 'bg-green-500' }
 }
 

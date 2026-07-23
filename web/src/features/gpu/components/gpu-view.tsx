@@ -18,20 +18,20 @@ const CHART_COLORS = [
 ]
 
 function usageColor(usage: number): string {
-  if (usage >= 80) return 'text-red-500'
-  if (usage >= 50) return 'text-yellow-500'
+  if (usage >= 90) return 'text-red-500'
+  if (usage >= 80) return 'text-yellow-500'
   return 'text-green-500'
 }
 
 function usageBgColor(usage: number): string {
-  if (usage >= 80) return 'bg-red-500'
-  if (usage >= 50) return 'bg-yellow-500'
+  if (usage >= 90) return 'bg-red-500'
+  if (usage >= 80) return 'bg-yellow-500'
   return 'bg-green-500'
 }
 
 function tempColor(temp: number): string {
   if (temp >= 85) return 'text-red-500'
-  if (temp >= 60) return 'text-yellow-500'
+  if (temp >= 75) return 'text-yellow-500'
   return 'text-green-500'
 }
 
