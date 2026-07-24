@@ -59,7 +59,11 @@ pub(crate) async fn gpu_stream_handler()
         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         loop {
             let _ = interval.tick().await;
-            sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+            sys.refresh_processes_specifics(
+                sysinfo::ProcessesToUpdate::All,
+                true,
+                sysinfo::ProcessRefreshKind::everything(),
+            );
             // users.refresh();
             let g_count = nvm.device_count()
                     .unwrap_or(0);
