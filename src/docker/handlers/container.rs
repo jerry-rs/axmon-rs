@@ -2,9 +2,10 @@ use crate::state::AppState;
 use axum::Json;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use serde::{Serialize};
+use serde::Serialize;
+use tracing::{error, warn};
 
-#[derive( Serialize)]
+#[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Port {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -15,7 +16,6 @@ pub struct Port {
     pub public_port: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#type: Option<String>,
-
 }
 
 #[derive(Serialize)]
@@ -60,23 +60,24 @@ pub(crate) async fn docker_containers_handler(
                             let created = c.created;
                             let size_rw = c.size_rw;
                             let size_root_fs = c.size_root_fs;
-                            let state = c.state.map(|s|s.to_string()).unwrap_or("Unknown".to_string()).to_string();
+                            let state = c
+                                .state
+                                .map(|s| s.to_string())
+                                .unwrap_or("Unknown".to_string())
+                                .to_string();
                             let status = c.status;
-                            let ports = c.ports
-                                .map(|mut port_summary|{
-                                    port_summary.sort_by(|a,b|a.public_port.cmp(&b.public_port));
-                                    port_summary
-                                        .into_iter()
-                                        .map(|ps|{
-                                            Port{
-                                                ip: ps.ip,
-                                                private_port: ps.private_port,
-                                                public_port: ps.public_port,
-                                                r#type: ps.typ.map(|t|t.to_string()),
-                                            }
-                                        }).collect::<Vec<_>>()
-
-                                });
+                            let ports = c.ports.map(|mut port_summary| {
+                                port_summary.sort_by(|a, b| a.public_port.cmp(&b.public_port));
+                                port_summary
+                                    .into_iter()
+                                    .map(|ps| Port {
+                                        ip: ps.ip,
+                                        private_port: ps.private_port,
+                                        public_port: ps.public_port,
+                                        r#type: ps.typ.map(|t| t.to_string()),
+                                    })
+                                    .collect::<Vec<_>>()
+                            });
                             Container {
                                 id,
                                 names,
@@ -87,7 +88,7 @@ pub(crate) async fn docker_containers_handler(
                                 size_root_fs,
                                 state,
                                 status,
-                                ports
+                                ports,
                             }
                         })
                         .collect::<Vec<Container>>();
@@ -102,15 +103,18 @@ pub(crate) async fn docker_containers_handler(
                     (StatusCode::OK, Json(docker_container_response)).into_response()
                 }
                 Err(e) => {
-                    eprintln!("{}", e);
+                    error!("{}", e);
                     (StatusCode::INTERNAL_SERVER_ERROR, "list containers failed").into_response()
                 }
             }
         }
-        None => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Docker is no longer in progress",
-        )
-            .into_response(),
+        None => {
+            warn!("Docker is no longer in progress");
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Docker is no longer in progress",
+            )
+                .into_response()
+        }
     }
 }
