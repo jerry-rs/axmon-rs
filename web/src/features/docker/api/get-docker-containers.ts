@@ -3,10 +3,12 @@ import { apiClient } from '@/lib/api-client'
 import type { DockerContainers } from '../types'
 
 async function fetchDockerContainers(): Promise<DockerContainers> {
-  return apiClient<DockerContainers>('/v1/docker/containers')
+  return apiClient<DockerContainers>('/v1/docker/containers', { timeout: 120_000 })
 }
 
 export const dockerContainersQueryOptions = queryOptions({
   queryKey: ['docker', 'containers'],
   queryFn: fetchDockerContainers,
+  retry: 2,
+  staleTime: Infinity,
 })

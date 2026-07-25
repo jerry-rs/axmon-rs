@@ -9,4 +9,6 @@ async function fetchDockerImages(): Promise<DockerImages> {
 export const dockerImagesQueryOptions = queryOptions({
   queryKey: ['docker', 'images'],
   queryFn: fetchDockerImages,
+  retry: 2,
+  staleTime: Infinity,
 })

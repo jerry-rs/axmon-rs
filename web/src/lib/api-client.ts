@@ -2,6 +2,7 @@ const BASE_URL = '/api'
 
 interface RequestOptions extends RequestInit {
   params?: Record<string, string>
+  timeout?: number
 }
 
 class ApiError extends Error {
@@ -15,7 +16,7 @@ class ApiError extends Error {
 }
 
 async function apiClient<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-  const { params, ...init } = options
+  const { params, timeout, ...init } = options
 
   let url = `${BASE_URL}${endpoint}`
   if (params) {
@@ -23,19 +24,27 @@ async function apiClient<T>(endpoint: string, options: RequestOptions = {}): Pro
     url += `?${searchParams.toString()}`
   }
 
-  const res = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...init.headers,
-    },
-    ...init,
-  })
+  const controller = timeout != null ? new AbortController() : undefined
+  const timer = controller ? setTimeout(() => controller.abort(), timeout) : undefined
 
-  if (!res.ok) {
-    throw new ApiError(res.status, `Request failed: ${res.status} ${res.statusText}`)
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...init.headers,
+      },
+      signal: controller?.signal,
+      ...init,
+    })
+
+    if (!res.ok) {
+      throw new ApiError(res.status, `Request failed: ${res.status} ${res.statusText}`)
+    }
+
+    return res.json()
+  } finally {
+    if (timer) clearTimeout(timer)
   }
-
-  return res.json()
 }
 
 export { apiClient, ApiError }
