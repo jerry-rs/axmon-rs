@@ -1,1 +1,0 @@
-export { diskInfoQueryOptions } from './get-disk-info'

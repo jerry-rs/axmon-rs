@@ -8,28 +8,11 @@ name = "axmon"
 path = "src/main.rs"
 
 [dependencies]
-async-stream = { version = "0.3.6" }
-axum = { version = "0.8.9", features = ["macros"] }
-bollard = { version = "0.21.0" }
-clap = { version = "4.6.3", features = ["derive", "env"] }
-console-subscriber = { version = "0.5.0", optional = true }
-local-ip-address = { version = "0.6.13" }
-mimalloc = { version = "0.1.52" }
-nvml-wrapper = { version = "0.12.1", features = ["serde"] }
-rust-embed = { version = "8.12.0", features = ["axum-ex", "mime-guess"] }
-serde = { version = "1.0.229", features = ["derive"] }
-sysinfo = { version = "0.39.6", features = ["serde", "linux-netdevs"] }
-tokio = { version = "1.53.1", features = ["full", "tracing"] }
-tokio-stream = { version = "0.1.18" }
-tracing = { version = "0.1.44" }
-tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+
 
 [build-dependencies]
 walkdir = {version = "2.5.0"}
 
-[features]
-default = []
-tokio-console = ["dep:console-subscriber"]
 
 [profile.release]
 opt-level = 3      # 优化目标：最大执行速度
