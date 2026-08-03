@@ -1,24 +1,26 @@
 [package]
-name = "axmon-rs"
+name = "axmon"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [[bin]]
 name = "axmon"
 path = "src/main.rs"
 
 [dependencies]
-
-
-[build-dependencies]
-walkdir = {version = "2.5.0"}
-
+anyhow = { version = "1" }
+async-trait = { version = "0.1" }
+axum = { version = "0.7", features = ["ws"] }
+bollard = { version = "0.16" }
+futures-util = "0.3"
+nvml-wrapper = { version = "0.10" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1" }
+sysinfo = { version = "0.30",features=["linux-netdevs"] }
+tokio = { version = "1", features = ["full"] }
+tracing = { version = "0.1" }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [profile.release]
-opt-level = 3      # 优化目标：最大执行速度
-lto = "fat"        # 启用最激进的链接时优化
-codegen-units = 1  # 减少代码生成单元数量，提高优化效果
-panic = "abort"    # 使用"abort"而非"unwind"处理恐慌
-
-
-
+lto = "thin"
+codegen-units = 1
