@@ -37,7 +37,7 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
                     Ok(p) => p,
                     Err(_) => continue,
                 };
-                if socket.send(Message::Text(payload)).await.is_err() {
+                if socket.send(Message::Text(payload.into())).await.is_err() {
                     break;
                 }
             }

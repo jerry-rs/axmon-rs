@@ -31,7 +31,7 @@ pub struct Config {
 impl Config {
     pub fn from_env() -> Self {
         let mut cfg = Self::default();
-        if let Ok(addr) = std::env::var("SYSTEM_MONITOR_ADDR") {
+        if let Ok(addr) = std::env::var("APP_ADDR") {
             cfg.listen_addr = addr;
         }
         cfg
@@ -48,7 +48,7 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            listen_addr: "0.0.0.0:8080".into(),
+            listen_addr: "0.0.0.0:1000".into(),
             cpu: CollectorSpec {
                 poll_interval: Duration::from_millis(1000),
                 collect_timeout: Duration::from_millis(800),
@@ -62,13 +62,8 @@ impl Default for Config {
                 collect_timeout: Duration::from_secs(3),
             },
             docker: CollectorSpec {
-                // 镜像/容器的增删不频繁，10s 的刷新粒度足够；list_containers
-                // 带 size: true 要逐容器遍历可写层，容器多时单轮就很重，
-                // 不值得为此 2s 跑一次。超时给到 5s：daemon 是真异步 I/O，
-                // 超时只是放弃等待、没有线程泄漏问题，宁可宽松一点让慢
-                // daemon 有机会完成，也不频繁丢弃整轮数据。
-                poll_interval: Duration::from_secs(60),
-                collect_timeout: Duration::from_secs(10),
+                poll_interval: Duration::from_mins(30),
+                collect_timeout: Duration::from_mins(10),
             },
             gpu: CollectorSpec {
                 poll_interval: Duration::from_secs(2),

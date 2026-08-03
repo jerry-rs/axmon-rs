@@ -3,7 +3,7 @@ use serde::Serialize;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
+use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System};
 use tokio::sync::Mutex;
 
 use nvml_wrapper::enum_wrappers::device::TemperatureSensor;
@@ -103,7 +103,7 @@ impl GpuCollector {
         Self {
             nvml,
             device_health: Mutex::new(device_health),
-            sys: Mutex::new(System::new_with_specifics(RefreshKind::new())),
+            sys: Mutex::new(System::new_with_specifics(RefreshKind::nothing())),
         }
     }
 
@@ -128,14 +128,17 @@ impl GpuCollector {
         // 进程名是基础信息每次必取；CPU 利用率和 RSS/VSZ 要显式开。
         // cpu_percent 靠同一份 sys 跨轮复用：sysinfo 的进程 CPU 是
         // 相对上一次刷新的差分，每轮换一份新的 System 会永远是 0。
-        sys.refresh_pids_specifics(
-            &pids,
-            ProcessRefreshKind::new().with_cpu().with_memory(),
+        // 0.32 起 refresh_pids_specifics 并入 refresh_processes_specifics：
+        // 显式给 PID 集合和"清理已死进程"开关。
+        sys.refresh_processes_specifics(
+            ProcessesToUpdate::Some(&pids),
+            true,
+            ProcessRefreshKind::nothing().with_cpu().with_memory(),
         );
 
         for p in gpus.iter_mut().flat_map(|g| g.processes.iter_mut()) {
             if let Some(proc_) = sys.process(Pid::from_u32(p.pid)) {
-                p.name = proc_.name().to_string();
+                p.name = proc_.name().to_string_lossy().into_owned();
                 p.cpu_percent = proc_.cpu_usage();
                 p.cpu_mem_bytes = proc_.memory();
                 p.cpu_virtual_mem_bytes = proc_.virtual_memory();

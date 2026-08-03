@@ -1,6 +1,5 @@
 use async_trait::async_trait;
-use bollard::container::ListContainersOptions;
-use bollard::image::ListImagesOptions;
+use bollard::query_parameters::{ListContainersOptions, ListImagesOptions};
 use bollard::Docker;
 use serde::Serialize;
 
@@ -109,11 +108,11 @@ impl Collector for DockerCollector {
         // 两个列表接口都是 daemon 侧的纯查询（容器 size 统计除外），
         // 用 try_join 并发发出去，任一失败整轮算失败、保留旧缓存。
         let (images, containers) = tokio::try_join!(
-            docker.list_images(Some(ListImagesOptions::<String> {
+            docker.list_images(Some(ListImagesOptions {
                 all: false, // 不列中间层镜像，跟 `docker images` 默认输出一致
                 ..Default::default()
             })),
-            docker.list_containers(Some(ListContainersOptions::<String> {
+            docker.list_containers(Some(ListContainersOptions {
                 all: true,  // 已停止的也列出来，否则 state 恒为 running，没有意义
                 size: true, // 需要 size_rw / size_root_fs，见 ContainerMetric 的说明
                 ..Default::default()
@@ -154,7 +153,9 @@ impl Collector for DockerCollector {
                     created_at: c.created.unwrap_or(0),
                     size_rw_bytes: c.size_rw.unwrap_or(0),
                     size_root_fs_bytes: c.size_root_fs.unwrap_or(0),
-                    state: c.state.unwrap_or_default(),
+                    // 0.21 起 state 是生成枚举；Display 输出与 daemon 原串一致
+                    // 的小写形式（"running"/"exited"/...），EMPTY 对应空串。
+                    state: c.state.map(|s| s.to_string()).unwrap_or_default(),
                     status: c.status.unwrap_or_default(),
                     command: c.command.unwrap_or_default(),
                     ports: {
@@ -163,7 +164,7 @@ impl Collector for DockerCollector {
                             .unwrap_or_default()
                             .into_iter()
                             .map(|p| {
-                                // PortTypeEnum 的 Display 直接输出小写协议名
+                                // PortSummaryTypeEnum 的 Display 直接输出小写协议名
                                 //（"tcp" / "udp" / "sctp"）。daemon 没上报协议时
                                 // 按 docker CLI 的默认回退到 "tcp"。
                                 let protocol = p

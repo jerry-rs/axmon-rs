@@ -37,7 +37,7 @@ impl CpuCollector {
         // collector 用不到的信息。new_with_specifics 构造时即完成第一次
         // 刷新建立基线，所以第一轮 collect 的差值就有效。
         let sys = System::new_with_specifics(
-            RefreshKind::new().with_cpu(CpuRefreshKind::new().with_cpu_usage()),
+            RefreshKind::nothing().with_cpu(CpuRefreshKind::nothing().with_cpu_usage()),
         );
         Self {
             sys: Mutex::new(sys),
@@ -60,7 +60,8 @@ impl Collector for CpuCollector {
         sys.refresh_cpu_usage();
 
         let per_core: Vec<f32> = sys.cpus().iter().map(|c| c.cpu_usage()).collect();
-        let global_usage_percent = sys.global_cpu_info().cpu_usage();
+        // 0.33 起 global_cpu_info()（返回 &Cpu）换成了 global_cpu_usage()，直接给 f32。
+        let global_usage_percent = sys.global_cpu_usage();
 
         let load = System::load_average();
 

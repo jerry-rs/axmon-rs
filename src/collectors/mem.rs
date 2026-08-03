@@ -37,7 +37,7 @@ pub struct MemCollector {
 impl MemCollector {
     pub fn new() -> Self {
         let sys = System::new_with_specifics(
-            RefreshKind::new().with_memory(MemoryRefreshKind::everything()),
+            RefreshKind::nothing().with_memory(MemoryRefreshKind::everything()),
         );
         Self { sys: Mutex::new(sys) }
     }

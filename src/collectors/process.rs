@@ -1,6 +1,8 @@
+use std::ffi::OsStr;
+
 use async_trait::async_trait;
 use serde::Serialize;
-use sysinfo::{ProcessRefreshKind, RefreshKind, System, UpdateKind, Users};
+use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System, UpdateKind, Users};
 use tokio::sync::Mutex;
 
 use super::Collector;
@@ -69,8 +71,8 @@ impl ProcessCollector {
             // 不变，取过一次就不必每轮重读（cmdline 是这几项里单进程读取
             // 成本最高的）。注意 user 不开的话 Process::user_id() 永远是
             // None，sysinfo 把它也视为按需采集项。
-            RefreshKind::new().with_processes(
-                ProcessRefreshKind::new()
+            RefreshKind::nothing().with_processes(
+                ProcessRefreshKind::nothing()
                     .with_cpu()
                     .with_memory()
                     .with_cmd(UpdateKind::OnlyIfNotSet)
@@ -109,9 +111,11 @@ fn to_info(p: &sysinfo::Process, users: &Users) -> ProcessInfo {
     ProcessInfo {
         pid: p.pid().as_u32(),
         ppid: p.parent().map(|pid| pid.as_u32()),
-        name: p.name().to_string(),
+        // 0.33 起 name/cmd 返回 &OsStr / &[OsStr]（进程名和命令行不是
+        // 合法 UTF-8 也是合法的），lossy 转换，个别坏字符替换为 U+FFFD。
+        name: p.name().to_string_lossy().into_owned(),
         user,
-        cmd: p.cmd().join(" "),
+        cmd: p.cmd().join(OsStr::new(" ")).to_string_lossy().into_owned(),
         cpu_percent: p.cpu_usage(),
         mem_bytes: p.memory(),
         virtual_mem_bytes: p.virtual_memory(),
@@ -124,10 +128,11 @@ impl Collector for ProcessCollector {
 
     async fn collect(&self) -> anyhow::Result<ProcessMetric> {
         let mut sys = self.sys.lock().await;
-        sys.refresh_processes();
+        // 0.32 起 refresh_processes 要求显式给范围和"是否清理已死进程"。
+        sys.refresh_processes(ProcessesToUpdate::All, true);
 
         let mut users = self.users.lock().await;
-        users.refresh_list();
+        users.refresh();
 
         let processes = sys.processes();
         let mut by_cpu: Vec<ProcessInfo> = processes.values().map(|p| to_info(p, &users)).collect();
