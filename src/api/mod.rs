@@ -3,6 +3,7 @@ use axum::Router;
 
 use crate::state::AppState;
 
+mod assets;
 mod rest;
 mod sse;
 mod ws;
@@ -20,4 +21,5 @@ pub fn build_router(state: AppState) -> Router {
         .route("/ws/metrics", get(ws::ws_handler))
         .route("/sse/metrics", get(sse::sse_handler))
         .with_state(state)
+        .fallback(assets::serve_embedded)
 }

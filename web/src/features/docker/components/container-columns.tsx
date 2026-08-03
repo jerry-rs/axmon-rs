@@ -1,8 +1,10 @@
 import type { ColumnDef } from "@tanstack/react-table";
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatBytes, formatTimeAgo } from "@/lib/format";
 
 import type { ContainerInfo } from "../api/docker-api";
+import { sizeColor } from "../utils/size-color";
 
 // 列顺序对齐 `docker ps -s`，PORTS 按页面要求挪到最后一列。
 // 后端额外给的 STATE 作为状态圆点并入 STATUS 列；
@@ -77,10 +79,12 @@ export const containerColumns: ColumnDef<ContainerInfo>[] = [
     header: () => <div className="text-right">SIZE</div>,
     cell: ({ row }) => (
       <div className="text-right whitespace-nowrap">
-        {formatBytes(row.original.sizeRwBytes)}
+        <span className={sizeColor(row.original.sizeRwBytes)}>
+          {formatBytes(row.original.sizeRwBytes)}
+        </span>
         <span className="text-muted-foreground">
           {" "}
-          (virtual {formatBytes(row.original.sizeRootFsBytes)})
+          (virtual <span className={sizeColor(row.original.sizeRootFsBytes) }>{formatBytes(row.original.sizeRootFsBytes)}</span>)
         </span>
       </div>
     ),
@@ -101,12 +105,16 @@ export const containerColumns: ColumnDef<ContainerInfo>[] = [
     accessorKey: "ports",
     header: "PORTS",
     cell: ({ row }) => (
-      <span
-        className="block max-w-56 truncate font-mono text-muted-foreground"
-        title={formatPorts(row.original.ports)}
-      >
-        {formatPorts(row.original.ports)}
-      </span>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="block max-w-56 truncate font-mono text-muted-foreground">
+            {formatPorts(row.original.ports)}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{formatPorts(row.original.ports)}</p>
+        </TooltipContent>
+      </Tooltip>
     ),
   },
 ];

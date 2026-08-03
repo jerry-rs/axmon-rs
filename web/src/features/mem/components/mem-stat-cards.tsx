@@ -26,7 +26,7 @@ export function MemStatCards({ totalBytes, usedBytes }: MemStatCardsProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold tabular-nums">{formatBytes(item.value)}</p>
+            <p className="text-2xl font-semibold tabular-nums text-green-500 ">{formatBytes(item.value)}</p>
           </CardContent>
         </Card>
       ))}

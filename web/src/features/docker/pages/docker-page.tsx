@@ -75,7 +75,7 @@ export function DockerPage() {
           <CardDescription>
             {data.images.length === 0
               ? "No images"
-              : `${data.images.length} images, sorted by size descending`}
+              : `${data.images.length} images`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -93,7 +93,7 @@ export function DockerPage() {
           <CardDescription>
             {data.containers.length === 0
               ? "No containers"
-              : `${data.containers.length} containers — running first, like docker ps`}
+              : `${data.containers.length} containers`}
           </CardDescription>
         </CardHeader>
         <CardContent>

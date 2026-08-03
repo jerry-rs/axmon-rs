@@ -60,7 +60,7 @@ export function GpuCard({ gpu, history }: GpuCardProps) {
 
         <div className="space-y-2">
           <div className="flex items-baseline justify-between text-sm">
-            <span className="text-muted-foreground">VRAM</span>
+            <span className="text-muted-foreground">GRAM</span>
             <span className="tabular-nums">
               {formatBytes(gpu.memUsedBytes)} / {formatBytes(gpu.memTotalBytes)}
               <span className="text-muted-foreground">
@@ -76,7 +76,7 @@ export function GpuCard({ gpu, history }: GpuCardProps) {
           <p className="text-sm text-muted-foreground">
             Processes
             {gpu.processes.length > 0 &&
-              ` · ${gpu.processes.length} compute, by VRAM descending`}
+              ` · ${gpu.processes.length} compute, by GRAM descending`}
           </p>
           <DataTable
             columns={gpuProcessColumns}

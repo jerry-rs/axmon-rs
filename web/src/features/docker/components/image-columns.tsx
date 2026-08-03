@@ -3,6 +3,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { formatBytes, formatTimeAgo } from "@/lib/format";
 
 import type { ImageInfo } from "../api/docker-api";
+import { sizeColor } from "../utils/size-color";
 
 // 列顺序对齐 `docker images`：REPOSITORY / TAG / IMAGE ID / CREATED / SIZE。
 // 后端的 name 已经是合并好的 repo:tag，所以合成一列 NAME 放最前。
@@ -43,7 +44,9 @@ export const imageColumns: ColumnDef<ImageInfo>[] = [
     accessorKey: "sizeBytes",
     header: () => <div className="text-right">SIZE</div>,
     cell: ({ row }) => (
-      <div className="text-right">{formatBytes(row.original.sizeBytes)}</div>
+      <div className={`text-right ${sizeColor(row.original.sizeBytes)}`}>
+        {formatBytes(row.original.sizeBytes)}
+      </div>
     ),
   },
 ];

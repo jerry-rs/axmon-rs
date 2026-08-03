@@ -4,7 +4,7 @@ import { formatBytes } from "@/lib/format";
 
 import type { GpuProcessInfo } from "../api/gpu-api";
 
-// 对应 nvidia-smi 的 Processes 一栏：PID / NAME / USED VRAM。
+// 对应 nvidia-smi 的 Processes 一栏：PID / NAME / USED GRAM。
 // 后端已按显存占用降序排好，前端不再重排。
 export const gpuProcessColumns: ColumnDef<GpuProcessInfo>[] = [
   {
@@ -60,5 +60,18 @@ export const gpuProcessColumns: ColumnDef<GpuProcessInfo>[] = [
       </div>
     ),
   },
-
+  {
+    accessorKey: "containerId",
+    header: () => <div className="text-left">CONTAINER ID</div>,
+    // 裸机进程为 null；悬停看完整 ID（只显示 12 位短 id，同 docker CLI）。
+    cell: ({ row }) => {
+      const id = row.original.containerId;
+      if (!id) return "—";
+      return (
+        <span className="font-mono text-muted-foreground text-left" title={id}>
+          {id.slice(0, 12)}
+        </span>
+      );
+    },
+  },
 ];

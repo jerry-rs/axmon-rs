@@ -16,12 +16,23 @@ use collectors::process::ProcessCollector;
 use config::Config;
 use scheduler::BackgroundCollector;
 use state::AppState;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::Layer;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 8)]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::from_default_env().add_directive("info".parse()?),
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_ansi_sanitization(true)
+                .with_file(true)
+                .with_line_number(true)
+                .pretty()
+                .with_filter(
+                    tracing_subscriber::EnvFilter::try_from_default_env()
+                        .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+                ),
         )
         .init();
 
@@ -31,7 +42,7 @@ async fn main() -> anyhow::Result<()> {
     let app = api::build_router(state);
 
     let listener = tokio::net::TcpListener::bind(&config.listen_addr).await?;
-    tracing::info!(addr = %config.listen_addr, "system-monitor listening");
+    tracing::info!(addr = %config.listen_addr, "axmon listening");
 
     axum::serve(listener, app).await?;
     Ok(())

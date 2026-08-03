@@ -120,7 +120,7 @@ impl Collector for DockerCollector {
             })),
         )?;
 
-        let images = images
+        let mut images: Vec<ImageMetric> = images
             .into_iter()
             .map(|img| ImageMetric {
                 id: img.id,
@@ -135,7 +135,9 @@ impl Collector for DockerCollector {
             })
             .collect();
 
-        let containers = containers
+        // 按占用空间降序：镜像列表的查看场景多半是排查磁盘占用，大头排前面。
+        images.sort_by(|a, b| b.size_bytes.cmp(&a.size_bytes));
+        let mut containers: Vec<ContainerMetric> = containers
             .into_iter()
             .filter_map(|c| {
                 let id = c.id?;
@@ -179,14 +181,13 @@ impl Collector for DockerCollector {
                         // 按宿主机映射端口升序；只 EXPOSE 未 publish 的
                         //（public_port 为 None）用 MAX 沉底，published 的
                         // 服务端口排前面。次键 private_port 让次序稳定可读。
-                        ports.sort_by_key(|p| {
-                            (p.public_port.unwrap_or(u16::MAX), p.private_port)
-                        });
+                        ports.sort_by_key(|p| (p.public_port.unwrap_or(u16::MAX), p.private_port));
                         ports
                     },
                 })
             })
             .collect();
+        containers.sort_by(|a, b| b.size_rw_bytes.cmp(&a.size_rw_bytes));
 
         Ok(DockerMetric {
             images,

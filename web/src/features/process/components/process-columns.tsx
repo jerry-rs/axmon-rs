@@ -16,17 +16,23 @@ export const processColumns: ColumnDef<ProcessInfo>[] = [
     header: "#",
     cell: ({ row }) => <span className="text-muted-foreground">{row.index + 1}</span>,
   },
-  { accessorKey: "pid", header: "PID" },
+  {
+    accessorKey: "pid",
+    header: () => <div className="text-left">PID</div>,
+    cell: ({ row }) => <div className="text-left tabular-nums">{row.original.pid}</div>,
+  },
   {
     accessorKey: "ppid",
-    header: "PPID",
+    header: () => <div className="text-left">PPID</div>,
     // init / 内核线程没有父进程（后端给 null）。
-    cell: ({ row }) => row.original.ppid ?? "—",
+    cell: ({ row }) => (
+      <div className="text-left tabular-nums">{row.original.ppid ?? "—"}</div>
+    ),
   },
   {
     accessorKey: "user",
-    header: "USER",
-    cell: ({ row }) => row.original.user || "—",
+    header: () => <div className="text-center">USER</div>,
+    cell: ({ row }) => (<div className="text-center tabular-nums"> {row.original.user || "—"}</div>),
   },
   {
     accessorKey: "cpuPercent",
@@ -56,9 +62,9 @@ export const processColumns: ColumnDef<ProcessInfo>[] = [
 
   {
     accessorKey: "name",
-    header: "NAME",
+    header: () => <div className="text-left">NAME</div>,
     cell: ({ row }) => (
-      <span className="block max-w-40 truncate font-medium" title={row.original.name}>
+      <span className="text-left block max-w-40 truncate font-medium" title={row.original.name}>
         {row.original.name}
       </span>
     ),

@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { NavLink } from "react-router";
 import type { LucideIcon } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +28,7 @@ export function OverviewCard({
   unavailable,
 }: OverviewCardProps) {
   return (
-    <Link to={to} className="block transition-opacity hover:opacity-80">
+    <NavLink to={to} className="block transition-opacity hover:opacity-80">
       <Card className="h-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -46,6 +46,6 @@ export function OverviewCard({
           </p>
         </CardContent>
       </Card>
-    </Link>
+    </NavLink>
   );
 }

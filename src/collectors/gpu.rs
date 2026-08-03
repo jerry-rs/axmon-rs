@@ -30,6 +30,10 @@ pub struct GpuProcessInfo {
     pub cpu_mem_bytes: u64,
     /// 主机侧（CPU）虚拟内存（VSZ）。
     pub cpu_virtual_mem_bytes: u64,
+    /// 进程所在容器的完整 ID（64 位 hex），从 /proc/<pid>/cgroup 解析；
+    /// 裸机进程、或读取的间隙进程已退出时为 None。容器名不在后端 join——
+    /// 前端拿 docker 指标按 ID 前缀匹配，保持 collector 之间零耦合。
+    pub container_id: Option<String>,
 }
 
 #[derive(Serialize, Clone, Default, Debug)]
@@ -103,8 +107,8 @@ impl GpuCollector {
         }
     }
 
-    /// NVML 只给 PID，进程名和 CPU/内存指标都要从 OS 侧补。在所有卡的
-    /// NVML 查询都结束后统一做一次：join_all 之前补会拖长每张卡的
+    /// NVML 只给 PID，进程名、CPU/内存指标和容器 ID 都要从 OS 侧补。
+    /// 在所有卡的 NVML 查询都结束后统一做一次：join_all 之前补会拖长每张卡的
     /// guarded 窗口，而按 PID 定向刷新就几条 /proc 记录，同步做的成本
     /// 可以忽略，不需要 spawn_blocking。解析失败（进程刚好退出、权限
     /// 不足）就留默认值，不视为采集失败。
@@ -136,8 +140,24 @@ impl GpuCollector {
                 p.cpu_mem_bytes = proc_.memory();
                 p.cpu_virtual_mem_bytes = proc_.virtual_memory();
             }
+            // 同一进程占多张卡时会重复读几次这个小文件，成本可忽略。
+            p.container_id = parse_container_id(p.pid);
         }
     }
+}
+
+/// 从 /proc/<pid>/cgroup 提取进程所在的容器 ID。ID 在 cgroup 路径里的
+/// 形态随 runtime 而变：systemd scope 是 docker-/cri-containerd-/crio-/
+/// libpod- 前缀加 .scope，cgroupfs 是 /docker/<id> 裸路径，k8s 还会再
+/// 嵌一层 kubepods——共同点是一段 64 位十六进制，按字符特征扫描比逐
+/// runtime 枚举模式更耐变化。非容器进程的路径里没有这种串，天然
+/// 返回 None；文件读不到（进程刚好退出）同样 None，不视为采集失败。
+fn parse_container_id(pid: u32) -> Option<String> {
+    let content = std::fs::read_to_string(format!("/proc/{pid}/cgroup")).ok()?;
+    let id = content
+        .split(|c: char| !c.is_ascii_hexdigit())
+        .find(|s| s.len() == 64)?;
+    Some(id.to_string())
 }
 
 impl Default for GpuCollector {

@@ -17,12 +17,12 @@ export function LoadAverageCards({ loadAvg1, loadAvg5, loadAvg15 }: LoadAverageC
       {items.map((item) => (
         <Card key={item.label}>
           <CardHeader>
-            <CardTitle className="text-xs font-normal text-muted-foreground">
+            <CardTitle className="text-xs font-normal text-muted-foreground ">
               Load avg · {item.label}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold tabular-nums">{item.value.toFixed(2)}</p>
+            <p className="text-2xl font-semibold tabular-nums text-green-500">{item.value.toFixed(2)}</p>
           </CardContent>
         </Card>
       ))}

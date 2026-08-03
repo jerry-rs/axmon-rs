@@ -13,25 +13,25 @@ export function DockerStatCards({ metric }: DockerStatCardsProps) {
   const stopped = metric.containers.length - running;
 
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2">
       <Card>
         <CardHeader>
           <CardDescription>Images</CardDescription>
-          <CardTitle className="text-2xl tabular-nums">
+          <CardTitle className="text-2xl tabular-nums text-green-500">
             {metric.images.length}
           </CardTitle>
         </CardHeader>
       </Card>
       <Card>
         <CardHeader>
-          <CardDescription>Running containers</CardDescription>
-          <CardTitle className="text-2xl tabular-nums">{running}</CardTitle>
-        </CardHeader>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardDescription>Stopped containers</CardDescription>
-          <CardTitle className="text-2xl tabular-nums">{stopped}</CardTitle>
+          <CardDescription>Containers</CardDescription>
+          <CardTitle className="text-2xl tabular-nums text-green-500">
+            {running}
+            <span className="text-sm font-normal text-muted-foreground">
+              {" "}
+              / {stopped} stopped
+            </span>
+          </CardTitle>
         </CardHeader>
       </Card>
     </div>

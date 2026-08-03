@@ -6,7 +6,7 @@ export interface GpuProcessInfo {
   pid: number;
   /** 进程名；NVML 枚举到 sysinfo 解析之间进程退出时为空字符串。 */
   name: string;
-  /** 该进程占用的 GPU 显存（VRAM）；驱动不报告（Windows WDDM）时是 null，不是 0。 */
+  /** 该进程占用的 GPU 显存（GRAM）；驱动不报告（Windows WDDM）时是 null，不是 0。 */
   gpuMemBytes: number | null;
   /** CPU 利用率（100 = 一个核，多线程可超 100），按采集轮次差分。 */
   cpuPercent: number;
@@ -14,6 +14,9 @@ export interface GpuProcessInfo {
   cpuMemBytes: number;
   /** 主机侧（CPU）虚拟内存（VSZ）。 */
   cpuVirtualMemBytes: number;
+  /** 进程所在容器的完整 ID（64 位 hex，后端从 /proc/<pid>/cgroup 解析）；
+      裸机进程或读取间隙进程退出时是 null。直接展示短 ID，不做名字 join。 */
+  containerId: string | null;
 }
 
 export interface GpuInfo {

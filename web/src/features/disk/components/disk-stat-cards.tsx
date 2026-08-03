@@ -32,7 +32,7 @@ export function DiskStatCards({ disks }: { disks: DiskInfo[] }) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold tabular-nums">{item.value}</p>
+            <p className="text-2xl font-semibold tabular-nums text-green-500">{item.value}</p>
             {item.sub && (
               <p className="mt-1 truncate text-xs text-muted-foreground">{item.sub}</p>
             )}

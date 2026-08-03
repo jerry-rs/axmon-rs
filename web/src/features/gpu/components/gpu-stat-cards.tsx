@@ -31,7 +31,7 @@ export function GpuStatCards({ metric }: GpuStatCardsProps) {
       <Card>
         <CardHeader>
           <CardDescription>GPUs</CardDescription>
-          <CardTitle className="text-2xl tabular-nums">
+          <CardTitle className="text-2xl tabular-nums text-green-500">
             {healthy.length}
             <span className="text-sm font-normal text-muted-foreground">
               {" "}
@@ -43,7 +43,7 @@ export function GpuStatCards({ metric }: GpuStatCardsProps) {
       <Card>
         <CardHeader>
           <CardDescription>Max GPU utilization</CardDescription>
-          <CardTitle className="text-2xl tabular-nums">
+          <CardTitle className="text-2xl tabular-nums text-green-500">
             {busiest ? `${busiest.utilizationPercent}%` : "—"}
             {busiest && (
               <span className="text-sm font-normal text-muted-foreground">
@@ -56,8 +56,8 @@ export function GpuStatCards({ metric }: GpuStatCardsProps) {
       </Card>
       <Card>
         <CardHeader>
-          <CardDescription>Max VRAM</CardDescription>
-          <CardTitle className="text-2xl tabular-nums">
+          <CardDescription>Max GRAM</CardDescription>
+          <CardTitle className="text-2xl tabular-nums text-green-500">
             {fullest ? formatBytes(fullest.memUsedBytes) : "—"}
             {fullest && (
               <span className="text-sm font-normal text-muted-foreground">
@@ -71,7 +71,7 @@ export function GpuStatCards({ metric }: GpuStatCardsProps) {
       <Card>
         <CardHeader>
           <CardDescription>Max temperature</CardDescription>
-          <CardTitle className="text-2xl tabular-nums">
+          <CardTitle className="text-2xl tabular-nums text-green-500">
             {hottest ? `${hottest.temperatureC}°C` : "—"}
             {hottest && (
               <span className="text-sm font-normal text-muted-foreground">

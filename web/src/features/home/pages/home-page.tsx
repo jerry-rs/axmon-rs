@@ -38,7 +38,7 @@ export function HomePage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1 text-center ">
+      <div className="space-y-3 text-center">
         <h1 className="text-2xl font-semibold tracking-tight">Welcome to Axmon</h1>
         <p className="text-sm text-muted-foreground">
           Real-time monitoring for CPU, memory, disks, processes, Docker and GPUs.

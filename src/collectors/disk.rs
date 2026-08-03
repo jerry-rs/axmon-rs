@@ -40,6 +40,32 @@ impl Default for DiskCollector {
     }
 }
 
+/// 过滤与宿主机盘重复或没有容量意义的挂载，对齐 node_exporter 的默认
+/// 排除策略（fs-types-exclude + mount-points-exclude）：
+/// - fs 类型黑名单：overlay 是每个容器一条的 merged 挂载，容量数字
+///   就是 /var/lib/docker 所在盘的重复视图；squashfs 是 snap 包；
+///   其余是纯内核接口，没有容量概念。tmpfs 刻意不在列——/dev/shm、
+///   /run 消耗的是真实内存空间，容量值得监控；容器自己的 shm 挂载
+///   由下面的挂载点前缀兜掉。
+/// - 挂载点前缀：容器运行时数据目录之下的一切（overlay2 层、容器
+///   shm、bind mount 副本）都是重复视图；目录本身保留，那才是真实
+///   容量。前缀带尾斜杠，恰好只滤子孙、不滤目录自身。
+fn is_excluded(file_system: &str, mount_point: &str) -> bool {
+    const EXCLUDED_FS: &[&str] = &[
+        "autofs", "binfmt_misc", "bpf", "cgroup", "cgroup2", "configfs", "debugfs", "devfs",
+        "devpts", "devtmpfs", "fusectl", "hugetlbfs", "iso9660", "mqueue", "nsfs", "overlay",
+        "proc", "procfs", "pstore", "rpc_pipefs", "securityfs", "selinuxfs", "squashfs", "sysfs",
+        "tracefs",
+    ];
+    const EXCLUDED_MOUNT_PREFIXES: &[&str] =
+        &["/var/lib/docker/", "/var/lib/containerd/", "/var/lib/kubelet/"];
+
+    EXCLUDED_FS.contains(&file_system)
+        || EXCLUDED_MOUNT_PREFIXES
+            .iter()
+            .any(|p| mount_point.starts_with(p))
+}
+
 /// 跟 mem.rs 里的 percent 是同一个函数的两个副本——刻意不抽公共
 /// util：collector 之间保持零耦合（README 的分层约定），为这个
 /// 小函数引入共享模块不划算。
@@ -67,6 +93,12 @@ impl Collector for DiskCollector {
         let list = disks
             .list()
             .iter()
+            .filter(|d| {
+                !is_excluded(
+                    &d.file_system().to_string_lossy(),
+                    &d.mount_point().to_string_lossy(),
+                )
+            })
             .map(|d| DiskInfo {
                 name: d.name().to_string_lossy().to_string(),
                 mount_point: d.mount_point().to_string_lossy().to_string(),
