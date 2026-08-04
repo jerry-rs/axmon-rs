@@ -2,8 +2,8 @@ use std::ffi::OsStr;
 
 use async_trait::async_trait;
 use serde::Serialize;
+use std::sync::{Arc, Mutex};
 use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System, UpdateKind, Users};
-use tokio::sync::Mutex;
 
 use super::Collector;
 
@@ -55,11 +55,11 @@ pub struct ProcessMetric {
 /// 构造时的 new_with_specifics 完成第一次刷新建立基线，所以第一轮
 /// collect 的 cpu 值就有效（不会像全新实例那样全为 0）。
 pub struct ProcessCollector {
-    sys: Mutex<System>,
+    sys: Arc<Mutex<System>>,
     /// 用户名解析用的独立用户列表（/etc/passwd 那一份）。System 只给
     /// UID，UID → 用户名的映射要靠它；用户变化极不频繁，但每轮刷新
     /// 一次的成本也只是重读一次 passwd，无所谓。
-    users: Mutex<Users>,
+    users: Arc<Mutex<Users>>,
 }
 
 impl ProcessCollector {
@@ -80,8 +80,8 @@ impl ProcessCollector {
             ),
         );
         Self {
-            sys: Mutex::new(sys),
-            users: Mutex::new(Users::new_with_refreshed_list()),
+            sys: Arc::new(Mutex::new(sys)),
+            users: Arc::new(Mutex::new(Users::new_with_refreshed_list())),
         }
     }
 }
@@ -122,32 +122,54 @@ fn to_info(p: &sysinfo::Process, users: &Users) -> ProcessInfo {
     }
 }
 
+/// 从进程引用池里选出 Top N。池子里只有裸指针，整个选择过程
+/// 零字符串分配——name/user/cmd 的转换只留给最后的幸存者。
+///
+/// select_nth_unstable_by 是 O(n) 快速选择：调用后第 TOP_N 大
+/// 的元素落位到索引 TOP_N-1，比它大的全排在前面，truncate 后
+/// 恰好留下 Top N；再对这 N 个做完整排序，保证输出顺序稳定。
+fn top_n_processes<'a>(
+    pool: &[&'a sysinfo::Process],
+    cmp: impl Fn(&&'a sysinfo::Process, &&'a sysinfo::Process) -> std::cmp::Ordering,
+) -> Vec<&'a sysinfo::Process> {
+    let mut v = pool.to_vec();
+    if v.len() > TOP_N {
+        v.select_nth_unstable_by(TOP_N - 1, &cmp);
+        v.truncate(TOP_N);
+    }
+    v.sort_by(cmp);
+    v
+}
+
 #[async_trait]
 impl Collector for ProcessCollector {
     type Metric = ProcessMetric;
 
     async fn collect(&self) -> anyhow::Result<ProcessMetric> {
-        let mut sys = self.sys.lock().await;
-        // 0.32 起 refresh_processes 要求显式给范围和"是否清理已死进程"。
-        sys.refresh_processes(ProcessesToUpdate::All, true);
+        let sys = self.sys.clone();
+        let users = self.users.clone();
 
-        let mut users = self.users.lock().await;
-        users.refresh();
+        let metric = tokio::task::spawn_blocking(move || {
+            let mut sys = sys.lock().expect("failed to get lock");
+            sys.refresh_processes(ProcessesToUpdate::All, true);
+            let processes = sys.processes();
+            let process_count = processes.len();
+            let pool: Vec<&sysinfo::Process> = processes.values().collect();
 
-        let processes = sys.processes();
-        let mut by_cpu: Vec<ProcessInfo> = processes.values().map(|p| to_info(p, &users)).collect();
-        let mut by_mem = by_cpu.clone();
+            let top_cpu = top_n_processes(&pool, |a, b| b.cpu_usage().total_cmp(&a.cpu_usage()));
+            let top_mem = top_n_processes(&pool, |a, b| b.memory().cmp(&a.memory()));
 
-        by_cpu.sort_by(|a, b| b.cpu_percent.total_cmp(&a.cpu_percent));
-        by_cpu.truncate(TOP_N);
-        by_mem.sort_by(|a, b| b.mem_bytes.cmp(&a.mem_bytes));
-        by_mem.truncate(TOP_N);
+            let mut users = users.lock().unwrap();
+            users.refresh();
 
-        Ok(ProcessMetric {
-            process_count: processes.len(),
-            top_by_cpu: by_cpu,
-            top_by_mem: by_mem,
+            ProcessMetric {
+                process_count,
+                top_by_cpu: top_cpu.into_iter().map(|p| to_info(p, &users)).collect(),
+                top_by_mem: top_mem.into_iter().map(|p| to_info(p, &users)).collect(),
+            }
         })
+        .await?;
+        Ok(metric)
     }
 
     fn name(&self) -> &'static str {

@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde::Serialize;
-use tokio::sync::RwLock;
+use std::sync::RwLock;
 use tracing::warn;
 
 use crate::collectors::Collector;
@@ -33,19 +33,6 @@ fn now_unix_ms() -> u64 {
         .map(|d| d.as_millis() as u64)
         .unwrap_or(0)
 }
-
-/// 方案 A：进程启动时为每个 collector 起一个独立的、常驻的 tokio::spawn
-/// 循环，按固定间隔持续采集，结果写入共享缓存；HTTP/WebSocket 只读缓存，
-/// 不会在请求路径上触发现场采集。
-///
-/// 这里刻意保留了两层保护，对应前面讨论过的两个问题：
-/// 1. `collect_timeout`：给每次 collect() 套超时，避免某次采集异常慢
-///    （比如 GPU 满载时的 NVML 查询、Docker daemon 卡顿）导致这个
-///    collector 的循环本身长时间不再更新缓存——超时了就跳过这一轮，
-///    保留上一次的缓存值，下一轮 tick 再试。
-/// 2. 每个 collector 是完全独立的一个 tokio task，互相之间没有共享的
-///    锁或线程池以外的耦合——一个 collector 变慢，不会影响其他 collector
-///    的循环节奏。
 pub struct BackgroundCollector<C: Collector> {
     cache: Arc<RwLock<Timestamped<C::Metric>>>,
 }
@@ -54,7 +41,9 @@ impl<C: Collector> BackgroundCollector<C> {
     /// 启动常驻采集循环，返回一个可以拿去查缓存的句柄。
     pub fn spawn(inner: C, poll_interval: Duration, collect_timeout: Duration) -> Arc<Self> {
         let cache = Arc::new(RwLock::new(Timestamped::<C::Metric>::default()));
-        let this = Arc::new(Self { cache: cache.clone() });
+        let this = Arc::new(Self {
+            cache: cache.clone(),
+        });
 
         let inner = Arc::new(inner);
         let name = inner.name();
@@ -69,7 +58,7 @@ impl<C: Collector> BackgroundCollector<C> {
 
                 match tokio::time::timeout(collect_timeout, inner.collect()).await {
                     Ok(Ok(fresh)) => {
-                        *cache.write().await = Timestamped {
+                        *(cache.write().unwrap()) = Timestamped {
                             collected_at_unix_ms: now_unix_ms(),
                             metric: fresh,
                         };
@@ -78,7 +67,11 @@ impl<C: Collector> BackgroundCollector<C> {
                         warn!(collector = name, error = %e, "采集失败，保留上一次缓存值");
                     }
                     Err(_elapsed) => {
-                        warn!(collector = name, timeout_ms = collect_timeout.as_millis(), "采集超时，保留上一次缓存值");
+                        warn!(
+                            collector = name,
+                            timeout_ms = collect_timeout.as_millis(),
+                            "采集超时，保留上一次缓存值"
+                        );
                     }
                 }
             }
@@ -90,6 +83,6 @@ impl<C: Collector> BackgroundCollector<C> {
     /// 请求路径唯一需要调用的方法：直接读缓存，不做任何采集动作，
     /// 因此耗时是微秒级的锁读取 + clone，不会受任何采集器慢的影响。
     pub async fn get(&self) -> Timestamped<C::Metric> {
-        self.cache.read().await.clone()
+        self.cache.read().unwrap().clone()
     }
 }

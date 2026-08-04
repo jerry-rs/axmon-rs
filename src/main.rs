@@ -20,7 +20,7 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::Layer;
 
-#[tokio::main(flavor = "multi_thread", worker_threads = 8)]
+#[tokio::main(flavor = "multi_thread", worker_threads = 4)]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::registry()
         .with(
@@ -44,8 +44,39 @@ async fn main() -> anyhow::Result<()> {
     let listener = tokio::net::TcpListener::bind(&config.listen_addr).await?;
     tracing::info!(addr = %config.listen_addr, "axmon listening");
 
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
+    tracing::info!("graceful shutdown complete");
     Ok(())
+}
+
+async fn shutdown_signal() {
+    use tokio::signal::unix::{signal, SignalKind};
+
+    let mut sigint = signal(SignalKind::interrupt()).expect("install SIGINT handler");
+    let mut sigterm = signal(SignalKind::terminate()).expect("install SIGTERM handler");
+
+    tokio::select! {
+        _ = sigint.recv() => tracing::info!(signal = "SIGINT", "starting graceful shutdown"),
+        _ = sigterm.recv() => tracing::info!(signal = "SIGTERM", "starting graceful shutdown"),
+    }
+
+    // 优雅停机期间再收到任一信号 → 立即强杀，不再等。
+    // 必须放在独立 task 里：shutdown_signal 这个 future 一返回，
+    // 优雅停机才开始，阻塞在这里等第二信号会让停机永远不开始。
+    tokio::spawn(async move {
+        let (name, code) = tokio::select! {
+            _ = sigint.recv() =>  ("SIGINT", 130),
+            _ = sigterm.recv() =>  ("SIGTERM", 143),
+        };
+        tracing::warn!(
+            signal = name,
+            exit_code = code,
+            "second signal received, forcing exit"
+        );
+        std::process::exit(1);
+    });
 }
 
 /// 方案 A 的组合根：为每个 collector 起一个常驻的后台采集循环，

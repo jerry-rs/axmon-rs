@@ -2,9 +2,9 @@ use async_trait::async_trait;
 use serde::Serialize;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
+use std::sync::Mutex;
 use std::time::Duration;
 use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System};
-use tokio::sync::Mutex;
 
 use nvml_wrapper::enum_wrappers::device::TemperatureSensor;
 use nvml_wrapper::enums::device::UsedGpuMemory;
@@ -124,7 +124,7 @@ impl GpuCollector {
         pids.sort_unstable();
         pids.dedup();
 
-        let mut sys = self.sys.lock().await;
+        let mut sys = self.sys.lock().unwrap();
         // 进程名是基础信息每次必取；CPU 利用率和 RSS/VSZ 要显式开。
         // cpu_percent 靠同一份 sys 跨轮复用：sysinfo 的进程 CPU 是
         // 相对上一次刷新的差分，每轮换一份新的 System 会永远是 0。
@@ -245,7 +245,7 @@ async fn query_device_guarded(
     per_device_timeout: Duration,
 ) -> GpuInfo {
     let should_skip = {
-        let h = health.lock().await;
+        let h = health.lock().unwrap();
         h[index as usize]
             .consecutive_failures
             .load(Ordering::Relaxed)
@@ -285,7 +285,7 @@ async fn query_device_guarded(
         },
     };
 
-    let h = health.lock().await;
+    let h = health.lock().unwrap();
     if outcome.healthy {
         h[index as usize]
             .consecutive_failures
@@ -311,7 +311,7 @@ impl Collector for GpuCollector {
             });
         };
 
-        let count = self.device_health.lock().await.len() as u32;
+        let count = self.device_health.lock().unwrap().len() as u32;
         let per_device_timeout = Duration::from_millis(500);
 
         // 并发查询所有卡，而不是 for 循环里一个个 await——这样即使某张卡

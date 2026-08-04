@@ -52,13 +52,37 @@ impl Default for DiskCollector {
 ///   容量。前缀带尾斜杠，恰好只滤子孙、不滤目录自身。
 fn is_excluded(file_system: &str, mount_point: &str) -> bool {
     const EXCLUDED_FS: &[&str] = &[
-        "autofs", "binfmt_misc", "bpf", "cgroup", "cgroup2", "configfs", "debugfs", "devfs",
-        "devpts", "devtmpfs", "fusectl", "hugetlbfs", "iso9660", "mqueue", "nsfs", "overlay",
-        "proc", "procfs", "pstore", "rpc_pipefs", "securityfs", "selinuxfs", "squashfs", "sysfs",
+        "autofs",
+        "binfmt_misc",
+        "bpf",
+        "cgroup",
+        "cgroup2",
+        "configfs",
+        "debugfs",
+        "devfs",
+        "devpts",
+        "devtmpfs",
+        "fusectl",
+        "hugetlbfs",
+        "iso9660",
+        "mqueue",
+        "nsfs",
+        "overlay",
+        "proc",
+        "procfs",
+        "pstore",
+        "rpc_pipefs",
+        "securityfs",
+        "selinuxfs",
+        "squashfs",
+        "sysfs",
         "tracefs",
     ];
-    const EXCLUDED_MOUNT_PREFIXES: &[&str] =
-        &["/var/lib/docker/", "/var/lib/containerd/", "/var/lib/kubelet/"];
+    const EXCLUDED_MOUNT_PREFIXES: &[&str] = &[
+        "/var/lib/docker/",
+        "/var/lib/containerd/",
+        "/var/lib/kubelet/",
+    ];
 
     EXCLUDED_FS.contains(&file_system)
         || EXCLUDED_MOUNT_PREFIXES

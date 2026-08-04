@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use serde::Serialize;
+use std::sync::Mutex;
 use sysinfo::{MemoryRefreshKind, RefreshKind, System};
-use tokio::sync::Mutex;
 
 use super::Collector;
 
@@ -39,7 +39,9 @@ impl MemCollector {
         let sys = System::new_with_specifics(
             RefreshKind::nothing().with_memory(MemoryRefreshKind::everything()),
         );
-        Self { sys: Mutex::new(sys) }
+        Self {
+            sys: Mutex::new(sys),
+        }
     }
 }
 
@@ -66,7 +68,7 @@ impl Collector for MemCollector {
     type Metric = MemMetric;
 
     async fn collect(&self) -> anyhow::Result<MemMetric> {
-        let mut sys = self.sys.lock().await;
+        let mut sys = self.sys.lock().unwrap();
         sys.refresh_memory();
 
         let total = sys.total_memory();
