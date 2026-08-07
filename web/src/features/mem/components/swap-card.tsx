@@ -35,7 +35,10 @@ export function SwapCard({
     );
   }
 
-  const points = history.map((s) => ({ time: s.time, usage: s.swapUsage }));
+  const points = history.map((s) => ({
+    collectedAtUnixMs: s.collectedAtUnixMs,
+    usage: s.swapUsage,
+  }));
 
   return (
     <Card>

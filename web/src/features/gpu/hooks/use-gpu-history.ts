@@ -35,13 +35,11 @@ export function useGpuHistory() {
       ) {
         return prev;
       }
-      const time = new Date(data.collectedAtUnixMs).toLocaleTimeString();
       const next = { ...prev };
       for (const gpu of data.gpus) {
         if (!gpu.healthy) continue;
         const sample: GpuSample = {
           collectedAtUnixMs: data.collectedAtUnixMs,
-          time,
           usage: gpu.utilizationPercent,
         };
         next[gpu.index] = [...(next[gpu.index] ?? []), sample].slice(-HISTORY_SIZE);

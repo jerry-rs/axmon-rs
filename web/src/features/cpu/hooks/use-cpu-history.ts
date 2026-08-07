@@ -6,8 +6,6 @@ export interface CpuUsageSample {
   /** 用 collectedAtUnixMs 而不是收到响应的时间：后端采集失败保留旧缓存时，
    * 时间戳也是旧的，靠它去重，曲线不会原地踏步画出一串假"新"点。 */
   collectedAtUnixMs: number;
-  /** X 轴标签（HH:MM:SS）。 */
-  time: string;
   usage: number;
 }
 
@@ -33,7 +31,6 @@ export function useCpuHistory() {
       }
       const next: CpuUsageSample = {
         collectedAtUnixMs: data.collectedAtUnixMs,
-        time: new Date(data.collectedAtUnixMs).toLocaleTimeString(),
         usage: data.globalUsagePercent,
       };
       return [...prev, next].slice(-HISTORY_SIZE);

@@ -6,7 +6,6 @@ export interface MemUsageSample {
   /** 用 collectedAtUnixMs 去重：后端采集失败保留旧缓存时时间戳也是旧的，
    *  曲线不会原地踏步画出假"新"点。 */
   collectedAtUnixMs: number;
-  time: string;
   /** 物理内存使用率（0-100）。 */
   usage: number;
   /** swap 使用率（0-100），未配置 swap 的机器恒为 0。 */
@@ -36,7 +35,6 @@ export function useMemHistory() {
       }
       const next: MemUsageSample = {
         collectedAtUnixMs: data.collectedAtUnixMs,
-        time: new Date(data.collectedAtUnixMs).toLocaleTimeString(),
         usage: data.usagePercent,
         swapUsage: data.swapUsagePercent,
       };

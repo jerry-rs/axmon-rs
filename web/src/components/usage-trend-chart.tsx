@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import {
@@ -8,36 +9,61 @@ import {
 } from "@/components/ui/chart";
 
 export interface UsageTrendPoint {
-  /** X 轴标签（HH:MM:SS）。 */
-  time: string;
-  /** 0-100 的百分比。 */
+  /** X-axis timestamp in milliseconds. */
+  collectedAtUnixMs: number;
+  /** Usage percentage, 0-100. */
   usage: number;
 }
 
 interface UsageTrendChartProps {
   history: UsageTrendPoint[];
-  /** 曲线/面积颜色，各指标用不同颜色区分（cpu 绿、mem 蓝、swap 紫）。 */
+  /** Line/area color; each metric gets its own color (cpu green, mem blue, swap purple). */
   color: string;
   label?: string;
 }
 
-/** 通用的"使用率趋势"面积图：0-100% 纵轴、无动画（每秒刷新的活图表
- *  开动画只会不停抽动）、无数据点圆点。 */
-export function UsageTrendChart({ history, color, label = "使用率" }: UsageTrendChartProps) {
+/** Tick interval: 10s for ~1-minute windows, 15s for longer ones (GPU uses 2
+ *  minutes), keeping 6-8 ticks on the axis. */
+function tickStepMs(spanMs: number): number {
+  return spanMs > 90_000 ? 15_000 : 10_000;
+}
+
+/** Generic "usage trend" area chart: 0-100% Y axis, no animation (a live chart
+ *  refreshing every second would just twitch constantly), no data point dots. */
+export function UsageTrendChart({ history, color, label = "Usage" }: UsageTrendChartProps) {
   const chartConfig = {
     usage: { label, color },
   } satisfies ChartConfig;
+
+  // A category axis gets a new category every second, and recharts re-picks
+  // which ticks to show via minTickGap on every update, so the whole row of
+  // time labels jumps each second. Use a numeric time axis instead, with ticks
+  // aligned to wall-clock multiples of `step` and memoized per slot: as the
+  // window slides, tick values stay put and only shift left smoothly.
+  const start = history[0]?.collectedAtUnixMs ?? 0;
+  const end = history[history.length - 1]?.collectedAtUnixMs ?? 0;
+  const step = tickStepMs(end - start);
+  const startSlot = Math.ceil(start / step);
+  const endSlot = Math.floor(end / step);
+  const ticks = useMemo(() => {
+    const out: number[] = [];
+    for (let s = startSlot; s <= endSlot; s++) out.push(s * step);
+    return out;
+  }, [startSlot, endSlot, step]);
 
   return (
     <ChartContainer config={chartConfig} className="h-[240px] w-full">
       <AreaChart data={history} margin={{ left: 4, right: 12, top: 4 }}>
         <CartesianGrid vertical={false} />
         <XAxis
-          dataKey="time"
+          dataKey="collectedAtUnixMs"
+          type="number"
+          domain={["dataMin", "dataMax"]}
+          ticks={ticks}
+          tickFormatter={(v: number) => new Date(v).toLocaleTimeString()}
           tickLine={false}
           axisLine={false}
           tickMargin={8}
-          minTickGap={40}
         />
         <YAxis
           domain={[0, 100]}
@@ -46,7 +72,22 @@ export function UsageTrendChart({ history, color, label = "使用率" }: UsageTr
           tickFormatter={(v: number) => `${v}%`}
           width={40}
         />
-        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartTooltip
+          content={
+            <ChartTooltipContent
+              // The first labelFormatter arg is not the raw x value: with a
+              // numeric axis ChartTooltipContent replaces it with the config
+              // label ("Usage"), so read the timestamp from the payload's
+              // original data point instead.
+              labelFormatter={(_label, payload) => {
+                const ts = payload?.[0]?.payload?.collectedAtUnixMs;
+                return typeof ts === "number"
+                  ? new Date(ts).toLocaleTimeString()
+                  : null;
+              }}
+            />
+          }
+        />
         <Area
           dataKey="usage"
           type="monotone"

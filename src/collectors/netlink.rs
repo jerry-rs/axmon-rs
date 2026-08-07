@@ -82,10 +82,15 @@ mod linux {
 
     pub fn dump_all() -> Result<Vec<ConnEntry>> {
         let mut out = Vec::new();
-        dump_inet(AF_INET, IPPROTO_TCP, "tcp", &mut out)?;
-        dump_inet(AF_INET6, IPPROTO_TCP, "tcp", &mut out)?;
-        dump_inet(AF_INET, IPPROTO_UDP, "udp", &mut out)?;
-        dump_inet(AF_INET6, IPPROTO_UDP, "udp", &mut out)?;
+        // TCP：排除 LISTEN（等 ss 默认行为）和 TIME_WAIT（量大、转瞬即逝）。
+        let tcp_states = StateFlags::all() & !(StateFlags::LISTEN | StateFlags::TIME_WAIT);
+        // UDP 没有 LISTEN 状态：bind 后等数据的"监听"socket 状态是 CLOSE，
+        // connect 过的才是 ESTABLISHED。只取 ESTABLISHED 即过滤 UDP 监听。
+        let udp_states = StateFlags::ESTABLISHED;
+        dump_inet(AF_INET, IPPROTO_TCP, "tcp", tcp_states, &mut out)?;
+        dump_inet(AF_INET6, IPPROTO_TCP, "tcp", tcp_states, &mut out)?;
+        dump_inet(AF_INET, IPPROTO_UDP, "udp", udp_states, &mut out)?;
+        dump_inet(AF_INET6, IPPROTO_UDP, "udp", udp_states, &mut out)?;
         Ok(out)
     }
 
@@ -93,6 +98,7 @@ mod linux {
         family: u8,
         protocol: u8,
         protocol_name: &'static str,
+        states: StateFlags,
         out: &mut Vec<ConnEntry>,
     ) -> Result<()> {
         // 每次 dump 用新 socket：dump 状态挂在单个 socket 上，
@@ -111,7 +117,7 @@ mod linux {
                 family,
                 protocol,
                 extensions: ExtensionFlags::empty(),
-                states: StateFlags::all(),
+                states,
                 socket_id: if family == AF_INET {
                     SocketId::new_v4()
                 } else {
