@@ -43,7 +43,11 @@ impl Collector for NetLinkCollector {
         // 但连接数上万时耗时可见，放 spawn_blocking 里跑，
         // 避免占住 tokio 工作线程拖累 API 响应。
         let mut connections = tokio::task::spawn_blocking(linux::dump_all).await??;
-        connections.sort_by(|a, b| a.remote_ip.cmp(&b.remote_ip));
+        connections.sort_by(|a, b| {
+            a.local_ip
+                .cmp(&b.local_ip)
+                .then_with(|| a.local_port.cmp(&b.local_port))
+        });
         Ok(NetLinkMetric { connections })
     }
 

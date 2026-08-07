@@ -23,7 +23,11 @@ export function NetLinkPage() {
   const [proto, setProto] = useState<ProtoFilter>("all");
 
   // 内核 dump 的顺序是随机的，2s 一轮的轮询下列表会来回跳动，
-  // 所以渲染前排一个稳定顺序：协议 → 本地端口 → 对端端口（无对端排最后）。
+  // 所以渲染前排一个稳定顺序。排序键必须落到 socket 四元组才够：
+  // 只到 remotePort 为止的话，不同来源 IP 恰好同临时端口的入站连接
+  // 会并列，并列行的相对顺序仍取决于 dump 顺序，照样会跳。
+  // 无对端的行（Listen / 未 connect 的 UDP）当作组首，排在同端口
+  // 的活跃连接前面。
   const connections = useMemo(() => {
     const filtered = (data?.connections ?? []).filter(
       (c) => proto === "all" || c.protocol === proto,
@@ -32,7 +36,9 @@ export function NetLinkPage() {
       (a, b) =>
         a.protocol.localeCompare(b.protocol) ||
         a.localPort - b.localPort ||
-        (a.remotePort ?? 65536) - (b.remotePort ?? 65536),
+        a.localIp.localeCompare(b.localIp) ||
+        (a.remotePort ?? -1) - (b.remotePort ?? -1) ||
+        (a.remoteIp ?? "").localeCompare(b.remoteIp ?? ""),
     );
   }, [data, proto]);
 
