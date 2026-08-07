@@ -16,6 +16,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/v1/metrics/docker", get(rest::get_docker))
         .route("/api/v1/metrics/gpu", get(rest::get_gpu))
         .route("/api/v1/metrics/process", get(rest::get_process))
+        .route("/api/v1/metrics/netlink", get(rest::get_netlink))
         .route("/api/v1/metrics", get(rest::get_all))
         .route("/api/v1/health", get(rest::health))
         .route("/ws/metrics", get(ws::ws_handler))

@@ -8,6 +8,7 @@ import {
   House,
   ListTree,
   MemoryStick,
+  Network,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ const navItems: NavItem[] = [
   { to: "/mem", label: "MEM", icon: MemoryStick },
   { to: "/disk", label: "DISK", icon: HardDrive },
   { to: "/process", label: "PROCESS", icon: ListTree },
+  { to: "/netlink", label: "NETLINK", icon: Network },
   { to: "/docker", label: "DOCKER", icon: Container },
   { to: "/gpu", label: "GPU", icon: Gpu },
 ];

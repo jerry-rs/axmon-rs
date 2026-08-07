@@ -8,6 +8,7 @@ use crate::collectors::disk::{DiskCollector, DiskMetric};
 use crate::collectors::docker::{DockerCollector, DockerMetric};
 use crate::collectors::gpu::{GpuCollector, GpuMetric};
 use crate::collectors::mem::{MemCollector, MemMetric};
+use crate::collectors::netlink::{NetLinkCollector, NetLinkMetric};
 use crate::collectors::process::{ProcessCollector, ProcessMetric};
 use crate::scheduler::{BackgroundCollector, Timestamped};
 
@@ -23,6 +24,7 @@ pub struct FullSnapshot {
     pub docker: Timestamped<DockerMetric>,
     pub gpu: Timestamped<GpuMetric>,
     pub process: Timestamped<ProcessMetric>,
+    pub netlink: Timestamped<NetLinkMetric>,
 }
 
 /// 请求路径共享的纯数据持有者：只包含各采集器的缓存句柄，
@@ -37,6 +39,7 @@ pub struct AppState {
     pub docker: Arc<BackgroundCollector<DockerCollector>>,
     pub gpu: Arc<BackgroundCollector<GpuCollector>>,
     pub process: Arc<BackgroundCollector<ProcessCollector>>,
+    pub netlink: Arc<BackgroundCollector<NetLinkCollector>>,
     /// 当前打开的 WebSocket 连接数，纯粹用于日志/诊断，跟采集调度无关
     /// （方案 A 里采集本来就是一直在跑的，不需要靠连接数来启停）。
     pub ws_connections: Arc<AtomicUsize>,
@@ -44,14 +47,23 @@ pub struct AppState {
 
 impl AppState {
     pub async fn snapshot(&self) -> FullSnapshot {
-        let (cpu, mem, disk, docker, gpu, process) = tokio::join!(
+        let (cpu, mem, disk, docker, gpu, process, netlink) = tokio::join!(
             self.cpu.get(),
             self.mem.get(),
             self.disk.get(),
             self.docker.get(),
             self.gpu.get(),
             self.process.get(),
+            self.netlink.get(),
         );
-        FullSnapshot { cpu, mem, disk, docker, gpu, process }
+        FullSnapshot {
+            cpu,
+            mem,
+            disk,
+            docker,
+            gpu,
+            process,
+            netlink,
+        }
     }
 }

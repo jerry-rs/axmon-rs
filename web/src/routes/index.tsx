@@ -42,6 +42,13 @@ export const router = createBrowserRouter([
         }),
       },
       {
+        path: "netlink",
+        lazy: async () => ({
+          Component: (await import("@/features/netlink/pages/netlink-page"))
+            .NetLinkPage,
+        }),
+      },
+      {
         path: "docker",
         lazy: async () => ({
           Component: (await import("@/features/docker/pages/docker-page"))

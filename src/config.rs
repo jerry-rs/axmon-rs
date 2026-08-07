@@ -26,6 +26,7 @@ pub struct Config {
     pub docker: CollectorSpec,
     pub gpu: CollectorSpec,
     pub process: CollectorSpec,
+    pub netlink: CollectorSpec,
 }
 
 impl Config {
@@ -75,6 +76,12 @@ impl Default for Config {
             process: CollectorSpec {
                 // 进程枚举要扫全量 /proc/<pid>，成本比 mem 高一个量级，
                 // 且 Top N 榜单不需要秒级精度，2s 一次。
+                poll_interval: Duration::from_secs(2),
+                collect_timeout: Duration::from_secs(1),
+            },
+            netlink: CollectorSpec {
+                // socket dump 是一趟二进制的内核交互，成本低于扫 /proc；
+                // 但连接表变化快，2s 的颗粒度对连接监控够用。
                 poll_interval: Duration::from_secs(2),
                 collect_timeout: Duration::from_secs(1),
             },

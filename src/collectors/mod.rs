@@ -6,6 +6,7 @@ pub mod disk;
 pub mod docker;
 pub mod gpu;
 pub mod mem;
+pub mod netlink;
 pub mod process;
 
 /// 所有采集器的统一接口。

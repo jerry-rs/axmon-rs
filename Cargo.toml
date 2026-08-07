@@ -22,6 +22,13 @@ tracing = { version = "0.1" }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 rust-embed = { version = "8", features = ["axum-ex","mime-guess"] }
 
+# netlink 的 INET_DIAG 接口只有 Linux 有（ss 命令同款），
+# 依赖限定在 Linux target 下，macOS 上开发走 stub 分支。
+[target.'cfg(target_os = "linux")'.dependencies]
+netlink-sys = "0.8"
+netlink-packet-core = "0.7"
+netlink-packet-sock-diag = "0.4"
+
 [profile.release]
 lto = "thin"
 codegen-units = 1

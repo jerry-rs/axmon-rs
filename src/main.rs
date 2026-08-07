@@ -12,6 +12,7 @@ use collectors::disk::DiskCollector;
 use collectors::docker::DockerCollector;
 use collectors::gpu::GpuCollector;
 use collectors::mem::MemCollector;
+use collectors::netlink::NetLinkCollector;
 use collectors::process::ProcessCollector;
 use config::Config;
 use scheduler::BackgroundCollector;
@@ -116,6 +117,11 @@ fn spawn_collectors(config: &Config) -> AppState {
             ProcessCollector::new(),
             config.process.poll_interval,
             config.process.collect_timeout,
+        ),
+        netlink: BackgroundCollector::spawn(
+            NetLinkCollector::new(),
+            config.netlink.poll_interval,
+            config.netlink.collect_timeout,
         ),
         ws_connections: Arc::new(AtomicUsize::new(0)),
     }
